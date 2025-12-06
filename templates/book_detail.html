@@ -1,0 +1,189 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="h-[calc(100vh-4rem)] flex flex-col md:flex-row overflow-hidden bg-background">
+    <!-- Sidebar / Table of Contents -->
+    <div id="sidebar-container" class="w-full md:w-80 bg-surfaceContainerLow border-r border-outline/10 flex flex-col h-full md:flex transition-transform duration-300 absolute md:relative z-20 transform -translate-x-full md:translate-x-0">
+        <div class="p-6 border-b border-outline/10 flex items-center justify-between">
+            <div>
+                <h2 class="text-lg font-bold text-onSurface font-display">{{ book.title }}</h2>
+                <p class="text-xs text-onSurfaceVariant mt-1">{{ book.get_level_display }}</p>
+            </div>
+            <button onclick="toggleSidebar()" class="md:hidden p-2 rounded-full hover:bg-surfaceVariant/50 text-onSurfaceVariant">
+                <span class="material-symbols-rounded">close</span>
+            </button>
+        </div>
+        <div class="flex-1 overflow-y-auto p-4 space-y-2">
+            {% for chapter in chapters %}
+            <button onclick="showChapter({{ forloop.counter0 }})" 
+                    class="chapter-btn w-full text-left px-4 py-3 rounded-[16px] text-sm font-medium transition-all duration-200 flex items-start gap-3
+                    {% if forloop.first %}bg-secondaryContainer text-onSecondaryContainer{% else %}text-onSurfaceVariant hover:bg-surfaceVariant/50 hover:text-onSurface{% endif %}"
+                    data-index="{{ forloop.counter0 }}">
+                <span class="flex-shrink-0 h-6 w-6 rounded-full bg-surface flex items-center justify-center text-xs font-bold opacity-70 border border-outline/10">
+                    {{ forloop.counter }}
+                </span>
+                <span class="mt-0.5">{{ chapter.title }}</span>
+            </button>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Main Content Area -->
+    <div id="content-container" class="flex-1 overflow-y-auto bg-surface relative hidden md:block">
+        <!-- Mobile Header for Content -->
+        <div class="md:hidden sticky top-0 bg-surface/90 backdrop-blur-md border-b border-outline/10 p-4 flex items-center gap-3 z-10">
+            <button onclick="toggleSidebar()" class="p-2 rounded-full hover:bg-surfaceVariant/50 text-onSurface">
+                <span class="material-symbols-rounded">menu_book</span>
+            </button>
+            <span class="font-bold text-onSurface truncate" id="mobile-chapter-title">Chapter 1</span>
+        </div>
+
+        {% for chapter in chapters %}
+        <div id="chapter-content-{{ forloop.counter }}" class="chapter-content max-w-3xl mx-auto py-8 px-6 lg:px-12 {% if not forloop.first %}hidden{% endif %}">
+            <div class="mb-8 pb-8 border-b border-outline/10">
+                <span class="text-sm font-bold text-primary uppercase tracking-wider mb-2 block">Chapter {{ forloop.counter }}</span>
+                <h1 class="text-3xl md:text-4xl font-display font-bold text-onSurface">{{ chapter.title }}</h1>
+            </div>
+            
+            <div class="prose prose-lg max-w-none 
+                prose-headings:text-onSurface prose-headings:font-display prose-headings:font-bold prose-headings:mt-8 prose-headings:mb-4
+                prose-p:text-onSurfaceVariant prose-p:leading-relaxed
+                prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                prose-strong:text-onSurface prose-strong:font-bold
+                prose-ul:list-disc prose-ul:pl-6 prose-ul:text-onSurfaceVariant
+                prose-ol:list-decimal prose-ol:pl-6 prose-ol:text-onSurfaceVariant
+                prose-li:marker:text-outline
+                prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-surfaceContainerLow prose-blockquote:py-3 prose-blockquote:px-5 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:text-onSurface prose-blockquote:shadow-sm
+                prose-code:text-primary prose-code:bg-primaryContainer/30 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded prose-code:before:content-none prose-code:after:content-none
+                prose-pre:bg-surfaceContainerHigh prose-pre:text-onSurface prose-pre:shadow-elevation-none prose-pre:rounded-xl prose-pre:border prose-pre:border-outline/10
+                prose-img:rounded-xl prose-img:shadow-elevation-2
+                prose-table:border-collapse prose-table:w-full prose-table:my-8 prose-table:shadow-sm prose-table:rounded-lg prose-table:overflow-hidden
+                prose-thead:bg-surfaceContainerHigh prose-thead:text-onSurface prose-thead:border-b prose-thead:border-outline/10
+                prose-th:p-4 prose-th:text-left prose-th:font-semibold
+                prose-td:p-4 prose-td:border-b prose-td:border-outline/10 prose-td:text-onSurfaceVariant">
+                {{ chapter.content_html|safe }}
+            </div>
+
+            <!-- Navigation Buttons -->
+            <div class="mt-12 pt-8 border-t border-outline/10 flex justify-between">
+                {% if not forloop.first %}
+                <button onclick="showChapter({{ forloop.counter0|add:'-1' }})" class="flex items-center gap-2 px-6 py-3 rounded-full border border-outline/20 text-onSurfaceVariant hover:bg-surfaceVariant/50 transition-colors font-medium">
+                    <span class="material-symbols-rounded">arrow_back</span>
+                    Previous
+                </button>
+                {% else %}
+                <div></div>
+                {% endif %}
+
+                {% if not forloop.last %}
+                <button onclick="showChapter({{ forloop.counter0|add:'1' }})" class="flex items-center gap-2 px-6 py-3 rounded-full bg-primary text-onPrimary hover:bg-primary/90 shadow-elevation-none hover:shadow-elevation-2 transition-all font-medium">
+                    Next
+                    <span class="material-symbols-rounded">arrow_forward</span>
+                </button>
+                {% else %}
+                <a href="{% url 'library' %}" class="flex items-center gap-2 px-6 py-3 rounded-full bg-tertiaryContainer text-onTertiaryContainer hover:bg-tertiaryContainer/80 transition-colors font-medium">
+                    <span class="material-symbols-rounded">check</span>
+                    Finish Book
+                </a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+
+<script>
+function showChapter(index) {
+    // Hide all chapters
+    document.querySelectorAll('.chapter-content').forEach(el => el.classList.add('hidden'));
+    // Show selected chapter
+    const selectedChapter = document.getElementById(`chapter-content-${index + 1}`);
+    if (selectedChapter) selectedChapter.classList.remove('hidden');
+    
+    // Update sidebar active state
+    document.querySelectorAll('.chapter-btn').forEach(btn => {
+        btn.classList.remove('bg-secondaryContainer', 'text-onSecondaryContainer');
+        btn.classList.add('text-onSurfaceVariant', 'hover:bg-surfaceVariant/50');
+    });
+    const activeBtn = document.querySelector(`.chapter-btn[data-index="${index}"]`);
+    if (activeBtn) {
+        activeBtn.classList.remove('text-onSurfaceVariant', 'hover:bg-surfaceVariant/50');
+        activeBtn.classList.add('bg-secondaryContainer', 'text-onSecondaryContainer');
+    }
+
+    // Scroll to top
+    document.getElementById('content-container').scrollTop = 0;
+    
+    // Mobile: Update title and close sidebar
+    const title = activeBtn.querySelector('span:last-child').innerText;
+    document.getElementById('mobile-chapter-title').innerText = title;
+    
+    if (window.innerWidth < 768) {
+        toggleSidebar();
+    }
+}
+
+function toggleSidebar() {
+    const sidebar = document.getElementById('sidebar-container');
+    const content = document.getElementById('content-container');
+    
+    if (window.innerWidth < 768) {
+        // Mobile toggle logic
+        if (sidebar.classList.contains('-translate-x-full')) {
+            sidebar.classList.remove('-translate-x-full');
+            content.classList.add('hidden');
+        } else {
+            sidebar.classList.add('-translate-x-full');
+            content.classList.remove('hidden');
+        }
+    }
+}
+
+// Initialize mobile view
+if (window.innerWidth < 768) {
+    document.getElementById('content-container').classList.remove('hidden');
+}
+</script>
+
+<style>
+    /* Admonition Styles - M3 Colors */
+    .tip, .warning {
+        padding: 1rem 1.5rem;
+        border-left-width: 4px;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+    
+    .tip {
+        border-color: var(--md-sys-color-primary);
+        background-color: var(--md-sys-color-primary-container);
+        color: var(--md-sys-color-on-primary-container);
+    }
+    
+    .warning {
+        border-color: var(--md-sys-color-error);
+        background-color: var(--md-sys-color-error-container);
+        color: var(--md-sys-color-on-error-container);
+    }
+    
+    .tip::before {
+        content: "💡 Pro Tip";
+        display: block;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    
+    .warning::before {
+        content: "⚠️ Common Mistake";
+        display: block;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+</style>
+{% endblock %}

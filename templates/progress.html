@@ -1,0 +1,140 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <h1 class="text-3xl font-display font-bold text-onSurface mb-8">Your Progress</h1>
+    
+    <!-- Stats Grid -->
+    <div class="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-4 mb-8">
+        <!-- Stat 1 -->
+        <div class="bg-surfaceContainerLow overflow-hidden shadow-elevation-none rounded-[24px] border border-outline/10">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-2xl bg-primaryContainer text-onPrimaryContainer flex items-center justify-center">
+                        <span class="material-symbols-rounded text-2xl">school</span>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-onSurfaceVariant truncate">Lessons Completed</dt>
+                            <dd class="text-2xl font-bold text-onSurface">{{ progress.completed_lessons.count }}</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Stat 2 -->
+        <div class="bg-surfaceContainerLow overflow-hidden shadow-elevation-none rounded-[24px] border border-outline/10">
+            <div class="p-6">
+                <div class="flex items-center">
+                    <div class="flex-shrink-0 h-12 w-12 rounded-2xl bg-secondaryContainer text-onSecondaryContainer flex items-center justify-center">
+                        <span class="material-symbols-rounded text-2xl">timer</span>
+                    </div>
+                    <div class="ml-5 w-0 flex-1">
+                        <dl>
+                            <dt class="text-sm font-medium text-onSurfaceVariant truncate">Practice Time</dt>
+                            <dd class="text-2xl font-bold text-onSurface">{{ progress.practice_time_minutes }}m</dd>
+                        </dl>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Analytics Chart -->
+    <div class="bg-surfaceContainerLow rounded-[32px] p-6 border border-outline/10 shadow-elevation-none">
+        <div class="flex items-center justify-between mb-6">
+            <div>
+                <h3 class="text-lg font-bold text-onSurface">Voice Practice Activity</h3>
+                <p class="text-sm text-onSurfaceVariant">Sessions over the last 7 days</p>
+            </div>
+            <div class="h-10 w-10 rounded-full bg-tertiaryContainer text-onTertiaryContainer flex items-center justify-center">
+                <span class="material-symbols-rounded">bar_chart</span>
+            </div>
+        </div>
+        
+        <div class="relative h-64 w-full">
+            <canvas id="activityChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const ctx = document.getElementById('activityChart').getContext('2d');
+        
+        // Get colors from CSS variables
+        const style = getComputedStyle(document.body);
+        const primaryColor = style.getPropertyValue('--md-sys-color-primary').trim();
+        const surfaceVariantColor = style.getPropertyValue('--md-sys-color-surface-variant').trim();
+        const onSurfaceColor = style.getPropertyValue('--md-sys-color-on-surface').trim();
+        
+        new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: {{ chart_labels|safe }},
+                datasets: [{
+                    label: 'Voice Sessions',
+                    data: {{ chart_data|safe }},
+                    backgroundColor: primaryColor,
+                    borderRadius: 8,
+                    barThickness: 20,
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: false
+                    },
+                    tooltip: {
+                        backgroundColor: surfaceVariantColor,
+                        titleColor: onSurfaceColor,
+                        bodyColor: onSurfaceColor,
+                        padding: 12,
+                        cornerRadius: 12,
+                        displayColors: false,
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: {
+                            color: style.getPropertyValue('--md-sys-color-outline').trim() + '20', // 20% opacity
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: onSurfaceColor,
+                            font: {
+                                family: "'Roboto', sans-serif",
+                                size: 12
+                            },
+                            stepSize: 1
+                        }
+                    },
+                    x: {
+                        grid: {
+                            display: false,
+                            drawBorder: false,
+                        },
+                        ticks: {
+                            color: onSurfaceColor,
+                            font: {
+                                family: "'Roboto', sans-serif",
+                                size: 12
+                            }
+                        }
+                    }
+                },
+                animation: {
+                    duration: 1000,
+                    easing: 'easeOutQuart'
+                }
+            }
+        });
+    });
+</script>
+</div>
+{% endblock %}

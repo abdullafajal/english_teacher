@@ -1,0 +1,60 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-display font-bold text-onSurface">My Lessons</h1>
+            <p class="mt-2 text-onSurfaceVariant">All your generated lessons and study materials.</p>
+        </div>
+        <a href="{% url 'generate_lesson' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-bold text-onPrimary bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all">
+            <span class="material-symbols-rounded mr-2 -ml-1 text-lg">add</span>
+            New Lesson
+        </a>
+    </div>
+
+    {% if lessons %}
+    <div class="grid grid-cols-1 gap-6 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+        {% for lesson in lessons %}
+        <a href="{% url 'lesson_detail' lesson.id %}" class="group flex flex-col bg-surfaceContainerLow rounded-[24px] shadow-elevation-none hover:shadow-elevation-2 transition-all duration-200 overflow-hidden border border-outline/10 h-full">
+            <div class="p-5 flex-1">
+                <div class="flex items-center justify-between mb-3">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-primaryContainer text-onPrimaryContainer border border-primary/10">
+                        {{ lesson.topic.get_level_display }}
+                    </span>
+                </div>
+                <h3 class="text-lg font-bold text-onSurface group-hover:text-primary transition-colors mb-2 line-clamp-2">
+                    {{ lesson.title }}
+                </h3>
+                <p class="text-xs text-onSurfaceVariant mb-3">
+                    {{ lesson.created_at|date:"M d, Y" }}
+                </p>
+                <p class="text-sm text-onSurfaceVariant line-clamp-3">
+                    {{ lesson.summary }}
+                </p>
+            </div>
+            <div class="px-5 py-4 bg-surfaceContainerHigh/50 border-t border-outline/10 flex items-center justify-between">
+                <span class="text-xs font-bold text-onSurfaceVariant group-hover:text-primary transition-colors">Review</span>
+                <span class="material-symbols-rounded text-lg text-onSurfaceVariant/50 group-hover:text-primary transition-colors">arrow_forward</span>
+            </div>
+        </a>
+        {% endfor %}
+    </div>
+    {% else %}
+    <!-- Empty State -->
+    <div class="text-center py-20 bg-surfaceContainerLow rounded-[32px] border-2 border-dashed border-outline/20">
+        <div class="mx-auto h-16 w-16 text-onSurfaceVariant/50 bg-surfaceVariant/30 rounded-full flex items-center justify-center mb-4">
+            <span class="material-symbols-rounded text-4xl">library_books</span>
+        </div>
+        <h3 class="text-lg font-bold text-onSurface">Your library is empty</h3>
+        <p class="mt-2 text-onSurfaceVariant max-w-sm mx-auto">Generate your first lesson to start building your personal English curriculum.</p>
+        <div class="mt-6">
+            <a href="{% url 'generate_lesson' %}" class="inline-flex items-center px-6 py-3 border border-transparent shadow-sm text-sm font-bold rounded-full text-onPrimary bg-primary hover:bg-primary/90 transition-all">
+                <span class="material-symbols-rounded mr-2">add</span>
+                Create Lesson
+            </a>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,518 @@
+{% extends "base.html" %}
+
+{% block content %}
+<!-- Full Screen Container -->
+<!-- Mobile: Fixed Full Screen (z-50). Desktop: Relative (z-0), fits in layout, Header visible -->
+<div class="fixed inset-0 z-50 sm:relative sm:z-0 sm:inset-auto sm:h-[calc(100vh-4rem)] bg-surface flex items-center justify-center overflow-hidden">
+    
+    <!-- Background Blur/Gradient -->
+    <div class="absolute inset-0 bg-gradient-to-br from-primaryContainer/30 via-surface to-secondaryContainer/30 opacity-50"></div>
+    <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 brightness-100 contrast-150"></div>
+
+    <!-- Desktop Card Wrapper (Mobile: Full Screen) -->
+    <div class="relative w-full h-full sm:h-[85vh] sm:w-[400px] sm:rounded-[3rem] bg-surfaceContainerLow/50 backdrop-blur-xl border border-outline/10 shadow-elevation-3 flex flex-col overflow-hidden transition-all duration-500">
+        
+        <!-- Header -->
+        <div class="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20">
+            <a href="{% url 'home' %}" class="p-2 rounded-full bg-surfaceVariant/50 hover:bg-surfaceVariant text-onSurfaceVariant transition-colors backdrop-blur-md">
+                <span class="material-symbols-rounded text-xl">arrow_back</span>
+            </a>
+            <button id="settings-btn" class="p-2 rounded-full bg-surfaceVariant/50 hover:bg-surfaceVariant text-onSurfaceVariant transition-colors backdrop-blur-md">
+                <span class="material-symbols-rounded text-xl">settings</span>
+            </button>
+        </div>
+
+        <!-- Main Content (Avatar & Status) -->
+        <div class="flex-1 flex flex-col items-center justify-center relative z-10 p-6">
+            
+            <!-- Status Text -->
+            <div class="mb-8 text-center">
+                <h2 class="text-onSurface text-2xl font-display font-bold tracking-tight">AI Coach</h2>
+                <p id="status-text" class="text-primary text-sm font-medium mt-1 animate-pulse">Ready to call</p>
+            </div>
+
+            <!-- Avatar Container -->
+            <div class="relative">
+                <!-- Pulsing Rings (Animated via JS) -->
+                <div id="avatar-ring-1" class="absolute inset-0 rounded-full border border-primary/30 scale-100 opacity-0 transition-transform duration-1000"></div>
+                <div id="avatar-ring-2" class="absolute inset-0 rounded-full border border-primary/20 scale-100 opacity-0 transition-transform duration-1000 delay-150"></div>
+                
+                <!-- Main Avatar -->
+                <div class="relative h-40 w-40 rounded-full bg-gradient-to-tr from-primary to-tertiary shadow-elevation-2 flex items-center justify-center overflow-hidden z-10">
+                    <span class="material-symbols-rounded text-6xl text-onPrimary">smart_toy</span>
+                </div>
+            </div>
+
+            <!-- Live Captions Overlay -->
+            <div id="captions-container" class="mt-12 w-full min-h-[80px] flex flex-col items-center justify-center text-center space-y-2 px-4">
+                <p id="caption-text" class="text-onSurface/80 text-lg font-medium leading-relaxed drop-shadow-sm transition-opacity duration-300 opacity-0">
+                    <!-- Text goes here -->
+                </p>
+            </div>
+        </div>
+
+        <!-- Controls (Bottom Bar) -->
+        <div class="p-8 pb-12 bg-gradient-to-t from-surface to-transparent z-20">
+            <div class="flex items-center justify-center space-x-8">
+                
+                <!-- Mute / Secondary -->
+                <button class="p-4 rounded-full bg-surfaceVariant/50 hover:bg-surfaceVariant text-onSurfaceVariant transition-all backdrop-blur-md active:scale-95">
+                    <span class="material-symbols-rounded text-2xl">mic_off</span>
+                </button>
+
+                <!-- Main Action (Mic / Interrupt) -->
+                <button id="mic-btn" class="relative h-20 w-20 rounded-full bg-primaryContainer text-onPrimaryContainer shadow-elevation-2 flex items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105 group">
+                    <span id="mic-icon" class="material-symbols-rounded text-4xl transition-all group-hover:scale-110">mic</span>
+                </button>
+
+                <!-- End Call -->
+                <button id="end-call-btn" class="p-4 rounded-full bg-errorContainer/50 hover:bg-errorContainer text-error hover:text-onErrorContainer transition-all backdrop-blur-md active:scale-95 border border-error/10">
+                    <span class="material-symbols-rounded text-2xl">call_end</span>
+                </button>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Settings Modal (Glassmorphism) -->
+    <div id="settings-modal" class="fixed inset-0 z-[60] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="absolute inset-0 bg-scrim/50 backdrop-blur-sm transition-opacity" id="modal-backdrop"></div>
+        <div class="fixed inset-0 z-10 overflow-y-auto">
+            <div class="flex min-h-full items-center justify-center p-4 text-center">
+                <div class="relative transform overflow-hidden rounded-[28px] bg-surfaceContainerHigh border border-outline/10 text-left shadow-elevation-3 transition-all w-full max-w-sm">
+                    <div class="px-6 py-6">
+                        <h3 class="text-lg font-bold leading-6 text-onSurface mb-6">Voice Settings</h3>
+                        <div class="space-y-6">
+                            <div>
+                                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-2">Voice Persona</label>
+                                <select id="voice-select" class="block w-full rounded-xl border-0 bg-surfaceVariant/50 py-3 pl-4 pr-10 text-onSurface shadow-sm ring-1 ring-inset ring-outline/10 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
+                                    <option>Loading...</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-2">Speed: <span id="rate-value" class="text-onSurface">1.0</span>x</label>
+                                <input type="range" id="rate-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1 bg-surfaceVariant rounded-lg appearance-none cursor-pointer accent-primary">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-2">Pitch: <span id="pitch-value" class="text-onSurface">1.0</span></label>
+                                <input type="range" id="pitch-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1 bg-surfaceVariant rounded-lg appearance-none cursor-pointer accent-primary">
+                            </div>
+                        </div>
+                    </div>
+                    <div class="bg-surfaceContainerLow px-6 py-4 flex flex-row-reverse gap-3">
+                        <button type="button" id="save-settings" class="inline-flex w-full justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-onPrimary shadow-sm hover:bg-primary/90 sm:w-auto transition-colors">Done</button>
+                        <button type="button" id="test-voice" class="inline-flex w-full justify-center rounded-full bg-surfaceVariant px-6 py-2.5 text-sm font-bold text-onSurfaceVariant shadow-sm hover:bg-surfaceVariant/80 sm:w-auto transition-colors">Test</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // --- Constants & State ---
+    const STATE = {
+        IDLE: 'idle',           // Mic off, waiting for user
+        LISTENING: 'listening', // Mic on, waiting for speech
+        PROCESSING: 'processing', // Mic on (ignoring), AI thinking
+        SPEAKING: 'speaking'    // Mic on (barge-in), AI speaking
+    };
+
+    // --- Configuration ---
+    const CONFIG = {
+        silenceDelay: 1500,     // Wait 1.5s silence before sending
+        restartDelay: 500,      // Wait 0.5s before restarting mic
+    };
+
+    // --- UI Manager ---
+    class UIManager {
+        constructor() {
+            this.elements = {
+                micBtn: document.getElementById('mic-btn'),
+                micIcon: document.getElementById('mic-icon'),
+                statusText: document.getElementById('status-text'),
+                captionText: document.getElementById('caption-text'),
+                avatarRing1: document.getElementById('avatar-ring-1'),
+                avatarRing2: document.getElementById('avatar-ring-2'),
+                endCallBtn: document.getElementById('end-call-btn')
+            };
+            this.animationInterval = null;
+        }
+
+        update(state) {
+            const { micBtn, micIcon, statusText, captionText } = this.elements;
+
+            switch (state) {
+                case STATE.IDLE:
+                    statusText.textContent = "Tap mic to start call";
+                    statusText.className = "text-onSurfaceVariant/70 text-sm font-medium mt-1";
+                    micIcon.textContent = "mic_off";
+                    micBtn.className = "relative h-20 w-20 rounded-full bg-surfaceContainerHigh text-onSurfaceVariant shadow-elevation-none flex items-center justify-center transition-all duration-200 scale-100 hover:scale-105";
+                    this.stopPulse();
+                    captionText.style.opacity = '0';
+                    break;
+
+                case STATE.LISTENING:
+                    statusText.textContent = "Listening...";
+                    statusText.className = "text-primary text-sm font-medium mt-1 animate-pulse";
+                    micIcon.textContent = "mic";
+                    micBtn.className = "relative h-20 w-20 rounded-full bg-primaryContainer text-onPrimaryContainer shadow-elevation-3 flex items-center justify-center transition-all duration-200 scale-110 ring-4 ring-primary/30";
+                    this.startPulse();
+                    break;
+
+                case STATE.PROCESSING:
+                    statusText.textContent = "Thinking...";
+                    statusText.className = "text-tertiary text-sm font-medium mt-1";
+                    micIcon.textContent = "mic"; 
+                    micBtn.className = "relative h-20 w-20 rounded-full bg-surfaceVariant text-onSurfaceVariant shadow-elevation-none flex items-center justify-center transition-all duration-200 scale-100 opacity-80";
+                    this.stopPulse();
+                    break;
+
+                case STATE.SPEAKING:
+                    statusText.textContent = "Speaking... (Tap/Talk to interrupt)";
+                    statusText.className = "text-secondary text-sm font-medium mt-1";
+                    micIcon.textContent = "mic"; 
+                    micBtn.className = "relative h-20 w-20 rounded-full bg-primary text-onPrimary shadow-elevation-2 flex items-center justify-center transition-all duration-200 scale-100 hover:bg-primary/90 ring-4 ring-primary/20";
+                    this.stopPulse();
+                    break;
+            }
+        }
+
+        showError(message) {
+            const { micBtn, micIcon, statusText } = this.elements;
+            statusText.textContent = message;
+            statusText.className = "text-error text-sm font-medium mt-1";
+            micIcon.textContent = "error";
+            micBtn.className = "relative h-20 w-20 rounded-full bg-errorContainer text-error shadow-elevation-none flex items-center justify-center transition-all duration-200";
+            this.stopPulse();
+        }
+
+        showCaption(text) {
+            this.elements.captionText.textContent = `"${text}"`;
+            this.elements.captionText.style.opacity = '1';
+        }
+
+        startPulse() {
+            if (this.animationInterval) clearInterval(this.animationInterval);
+            const { avatarRing1, avatarRing2 } = this.elements;
+            
+            this.animationInterval = setInterval(() => {
+                avatarRing1.classList.remove('opacity-0', 'scale-100');
+                avatarRing1.classList.add('opacity-100', 'scale-150');
+                setTimeout(() => {
+                    avatarRing1.classList.remove('opacity-100', 'scale-150');
+                    avatarRing1.classList.add('opacity-0', 'scale-100');
+                }, 1000);
+
+                setTimeout(() => {
+                    avatarRing2.classList.remove('opacity-0', 'scale-100');
+                    avatarRing2.classList.add('opacity-100', 'scale-150');
+                    setTimeout(() => {
+                        avatarRing2.classList.remove('opacity-100', 'scale-150');
+                        avatarRing2.classList.add('opacity-0', 'scale-100');
+                    }, 1000);
+                }, 500);
+            }, 2000);
+        }
+
+        stopPulse() {
+            if (this.animationInterval) clearInterval(this.animationInterval);
+            const { avatarRing1, avatarRing2 } = this.elements;
+            avatarRing1.classList.remove('opacity-100', 'scale-150');
+            avatarRing1.classList.add('opacity-0', 'scale-100');
+            avatarRing2.classList.remove('opacity-100', 'scale-150');
+            avatarRing2.classList.add('opacity-0', 'scale-100');
+        }
+    }
+
+    // --- Voice Manager ---
+    class VoiceManager {
+        constructor(uiManager) {
+            this.ui = uiManager;
+            this.state = STATE.IDLE;
+            this.recognition = null;
+            this.silenceTimer = null;
+            this.conversationId = null;
+            this.finalTranscript = '';
+            this.shouldBeListening = false; // Intent flag (is call active?)
+
+            this.setupRecognition();
+            this.setupSynthesis();
+        }
+
+        setupRecognition() {
+            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
+                this.ui.showError("Browser not supported");
+                return;
+            }
+
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            this.recognition = new SpeechRecognition();
+            this.recognition.continuous = true;
+            this.recognition.interimResults = true;
+            this.recognition.lang = 'en-US';
+
+            this.recognition.onstart = () => {
+                console.log("Mic started");
+                if (this.state === STATE.IDLE) this.setState(STATE.LISTENING);
+            };
+
+            this.recognition.onend = () => {
+                console.log("Mic ended");
+                // Auto-restart if we should be listening
+                if (this.shouldBeListening) {
+                    setTimeout(() => {
+                        if (this.shouldBeListening) this.startMic();
+                    }, CONFIG.restartDelay);
+                } else {
+                    this.setState(STATE.IDLE);
+                }
+            };
+
+            this.recognition.onresult = (event) => this.handleResult(event);
+            this.recognition.onerror = (event) => this.handleError(event);
+        }
+
+        setupSynthesis() {
+            this.voices = [];
+            if (window.speechSynthesis) {
+                window.speechSynthesis.onvoiceschanged = () => {
+                    this.voices = window.speechSynthesis.getVoices();
+                    // Update settings UI if needed
+                };
+            }
+        }
+
+        setState(newState) {
+            console.log(`State: ${this.state} -> ${newState}`);
+            this.state = newState;
+            this.ui.update(newState);
+        }
+
+        startCall() {
+            this.shouldBeListening = true;
+            this.setState(STATE.LISTENING);
+            this.startMic();
+        }
+
+        endCall() {
+            this.shouldBeListening = false;
+            this.setState(STATE.IDLE);
+            this.stopMic();
+            window.speechSynthesis.cancel();
+            clearTimeout(this.silenceTimer);
+        }
+
+        startMic() {
+            try {
+                this.recognition.start();
+            } catch (e) {
+                // Ignore "already started" errors
+                if (e.name !== 'InvalidStateError') console.error("Mic start error:", e);
+            }
+        }
+
+        stopMic() {
+            try {
+                this.recognition.abort(); // Abort closes immediately
+            } catch (e) {}
+        }
+
+        handleResult(event) {
+            // 1. Barge-in Logic
+            if (this.state === STATE.SPEAKING) {
+                // If we detect speech while speaking, interrupt!
+                if (event.results.length > 0) {
+                    console.log("Barge-in detected!");
+                    window.speechSynthesis.cancel();
+                    this.setState(STATE.LISTENING);
+                }
+            }
+
+            // 2. Ignore if Processing
+            if (this.state === STATE.PROCESSING) return;
+
+            // 3. Process Transcript
+            let interim = '';
+            for (let i = event.resultIndex; i < event.results.length; ++i) {
+                if (event.results[i].isFinal) {
+                    this.finalTranscript += event.results[i][0].transcript;
+                } else {
+                    interim += event.results[i][0].transcript;
+                }
+            }
+
+            this.ui.showCaption(this.finalTranscript + interim);
+            clearTimeout(this.silenceTimer);
+
+            // 4. Silence Timer (Auto-send)
+            if (this.finalTranscript || interim) {
+                this.silenceTimer = setTimeout(() => this.sendInput(), CONFIG.silenceDelay);
+            }
+        }
+
+        handleError(event) {
+            if (event.error === 'no-speech') return; // Normal
+            if (event.error === 'not-allowed') {
+                this.shouldBeListening = false;
+                this.ui.showError("Mic Access Denied");
+            }
+            console.warn("Recognition Error:", event.error);
+        }
+
+        async sendInput() {
+            if (!this.finalTranscript.trim()) return;
+
+            const text = this.finalTranscript;
+            this.finalTranscript = ''; // Clear buffer
+            this.setState(STATE.PROCESSING);
+
+            try {
+                const response = await fetch('/chat-api/', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRFToken': '{{ csrf_token }}'
+                    },
+                    body: JSON.stringify({ message: text, conversation_id: this.conversationId })
+                });
+
+                if (!response.ok) throw new Error('API Error');
+                const data = await response.json();
+                
+                if (data.conversation_id) this.conversationId = data.conversation_id;
+                this.ui.showCaption(data.response);
+                this.speak(data.response);
+
+            } catch (e) {
+                console.error(e);
+                this.ui.showError("Connection Error");
+                this.shouldBeListening = false; // Stop on fatal error
+            }
+        }
+
+        speak(text) {
+            if (!window.speechSynthesis) return;
+
+            this.setState(STATE.SPEAKING);
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Apply Settings
+            const rate = parseFloat(localStorage.getItem('speechRate')) || 1.0;
+            const pitch = parseFloat(localStorage.getItem('speechPitch')) || 1.0;
+            const voiceURI = localStorage.getItem('voiceURI');
+            
+            utterance.rate = rate;
+            utterance.pitch = pitch;
+            if (voiceURI) {
+                const voice = this.voices.find(v => v.voiceURI === voiceURI);
+                if (voice) utterance.voice = voice;
+            }
+
+            utterance.onend = () => {
+                // Only go back to listening if we weren't interrupted (still in SPEAKING state)
+                // or if we are still active.
+                if (this.shouldBeListening) {
+                    this.setState(STATE.LISTENING);
+                    // Ensure mic is running (Android fix)
+                    this.startMic(); 
+                }
+            };
+
+            utterance.onerror = (e) => {
+                console.error("TTS Error", e);
+                if (this.shouldBeListening) this.setState(STATE.LISTENING);
+            };
+
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // --- Initialization ---
+    document.addEventListener('DOMContentLoaded', () => {
+        const ui = new UIManager();
+        const voice = new VoiceManager(ui);
+
+        // Bind Controls
+        document.getElementById('mic-btn').addEventListener('click', () => {
+            if (voice.state === STATE.SPEAKING) {
+                // Manual Interrupt
+                window.speechSynthesis.cancel();
+                voice.setState(STATE.LISTENING);
+            } else if (voice.shouldBeListening) {
+                // Stop
+                voice.endCall();
+            } else {
+                // Start
+                voice.startCall();
+            }
+        });
+
+        document.getElementById('end-call-btn').addEventListener('click', () => {
+            voice.endCall();
+        });
+
+        // Settings Logic (Preserved from original, simplified binding)
+        // ... (Keep existing settings UI logic if needed, or assume it's handled globally)
+        // For brevity, I'm assuming the settings modal logic is separate or can be re-added if requested.
+        // Re-adding essential settings logic below for completeness:
+        
+        const settingsBtn = document.getElementById('settings-btn');
+        const settingsModal = document.getElementById('settings-modal');
+        const modalBackdrop = document.getElementById('modal-backdrop');
+        const saveSettingsBtn = document.getElementById('save-settings');
+        const testVoiceBtn = document.getElementById('test-voice');
+        const voiceSelect = document.getElementById('voice-select');
+        const rateRange = document.getElementById('rate-range');
+        const pitchRange = document.getElementById('pitch-range');
+        const rateValue = document.getElementById('rate-value');
+        const pitchValue = document.getElementById('pitch-value');
+
+        // Load initial values
+        rateRange.value = localStorage.getItem('speechRate') || 1.0;
+        pitchRange.value = localStorage.getItem('speechPitch') || 1.0;
+        rateValue.textContent = rateRange.value;
+        pitchValue.textContent = pitchRange.value;
+
+        // Populate voices
+        function populateVoices() {
+            const voices = window.speechSynthesis.getVoices();
+            voiceSelect.innerHTML = '';
+            voices.forEach(v => {
+                const opt = document.createElement('option');
+                opt.value = v.voiceURI;
+                opt.textContent = `${v.name} (${v.lang})`;
+                if (v.voiceURI === localStorage.getItem('voiceURI')) opt.selected = true;
+                voiceSelect.appendChild(opt);
+            });
+        }
+        if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
+        populateVoices();
+
+        // Event Listeners
+        settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
+        saveSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
+        modalBackdrop.addEventListener('click', () => settingsModal.classList.add('hidden'));
+        
+        rateRange.addEventListener('input', (e) => {
+            localStorage.setItem('speechRate', e.target.value);
+            rateValue.textContent = e.target.value;
+        });
+        pitchRange.addEventListener('input', (e) => {
+            localStorage.setItem('speechPitch', e.target.value);
+            pitchValue.textContent = e.target.value;
+        });
+        voiceSelect.addEventListener('change', (e) => localStorage.setItem('voiceURI', e.target.value));
+        
+        testVoiceBtn.addEventListener('click', () => {
+            const u = new SpeechSynthesisUtterance("Hello there! I am your AI English coach. This is an example of how my voice sounds when we practice together.");
+            u.rate = parseFloat(rateRange.value);
+            u.pitch = parseFloat(pitchRange.value);
+            const v = window.speechSynthesis.getVoices().find(v => v.voiceURI === voiceSelect.value);
+            if (v) u.voice = v;
+            window.speechSynthesis.speak(u);
+        });
+    });
+</script>
+{% endblock %}

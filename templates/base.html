@@ -1,0 +1,436 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>{% block title %}English Coach{% endblock %}</title>
+    
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        :root {
+            /* M3 Light Theme (Baseline Purple) */
+            --md-sys-color-primary: #6750A4;
+            --md-sys-color-on-primary: #FFFFFF;
+            --md-sys-color-primary-container: #EADDFF;
+            --md-sys-color-on-primary-container: #21005D;
+            
+            --md-sys-color-secondary: #625B71;
+            --md-sys-color-on-secondary: #FFFFFF;
+            --md-sys-color-secondary-container: #E8DEF8;
+            --md-sys-color-on-secondary-container: #1D192B;
+            
+            --md-sys-color-tertiary: #7D5260;
+            --md-sys-color-on-tertiary: #FFFFFF;
+            --md-sys-color-tertiary-container: #FFD8E4;
+            --md-sys-color-on-tertiary-container: #31111D;
+            
+            --md-sys-color-error: #B3261E;
+            --md-sys-color-on-error: #FFFFFF;
+            --md-sys-color-error-container: #F9DEDC;
+            --md-sys-color-on-error-container: #410E0B;
+            
+            --md-sys-color-background: #FEF7FF;
+            --md-sys-color-on-background: #1D1B20;
+            
+            --md-sys-color-surface: #FEF7FF;
+            --md-sys-color-on-surface: #1D1B20;
+            --md-sys-color-surface-variant: #E7E0EC;
+            --md-sys-color-on-surface-variant: #49454F;
+            --md-sys-color-outline: #79747E;
+            
+            --md-sys-color-surface-container-low: #F7F2FA;
+            --md-sys-color-surface-container-high: #ECE6F0;
+            
+            --md-sys-color-inverse-surface: #313033;
+            --md-sys-color-inverse-on-surface: #F4EFF4;
+        }
+
+        @media (prefers-color-scheme: dark) {
+            :root {
+                /* M3 Dark Theme */
+                --md-sys-color-primary: #D0BCFF;
+                --md-sys-color-on-primary: #381E72;
+                --md-sys-color-primary-container: #4F378B;
+                --md-sys-color-on-primary-container: #EADDFF;
+                
+                --md-sys-color-secondary: #CCC2DC;
+                --md-sys-color-on-secondary: #332D41;
+                --md-sys-color-secondary-container: #4A4458;
+                --md-sys-color-on-secondary-container: #E8DEF8;
+                
+                --md-sys-color-tertiary: #EFB8C8;
+                --md-sys-color-on-tertiary: #492532;
+                --md-sys-color-tertiary-container: #633B48;
+                --md-sys-color-on-tertiary-container: #FFD8E4;
+                
+                --md-sys-color-error: #F2B8B5;
+                --md-sys-color-on-error: #601410;
+                --md-sys-color-error-container: #8C1D18;
+                --md-sys-color-on-error-container: #F9DEDC;
+                
+                --md-sys-color-background: #141218;
+                --md-sys-color-on-background: #E6E1E5;
+                
+                --md-sys-color-surface: #141218;
+                --md-sys-color-on-surface: #E6E1E5;
+                --md-sys-color-surface-variant: #49454F;
+                --md-sys-color-on-surface-variant: #CAC4D0;
+                --md-sys-color-outline: #938F99;
+                
+                --md-sys-color-surface-container-low: #1D1B20;
+                --md-sys-color-surface-container-high: #2B2930;
+                
+                --md-sys-color-inverse-surface: #E6E1E5;
+                --md-sys-color-inverse-on-surface: #313033;
+            }
+        }
+    </style>
+
+    <script>
+        tailwind.config = {
+            darkMode: 'media',
+            theme: {
+                extend: {
+                    colors: {
+                        primary: 'var(--md-sys-color-primary)',
+                        onPrimary: 'var(--md-sys-color-on-primary)',
+                        primaryContainer: 'var(--md-sys-color-primary-container)',
+                        onPrimaryContainer: 'var(--md-sys-color-on-primary-container)',
+                        
+                        secondary: 'var(--md-sys-color-secondary)',
+                        onSecondary: 'var(--md-sys-color-on-secondary)',
+                        secondaryContainer: 'var(--md-sys-color-secondary-container)',
+                        onSecondaryContainer: 'var(--md-sys-color-on-secondary-container)',
+                        
+                        tertiary: 'var(--md-sys-color-tertiary)',
+                        onTertiary: 'var(--md-sys-color-on-tertiary)',
+                        tertiaryContainer: 'var(--md-sys-color-tertiary-container)',
+                        onTertiaryContainer: 'var(--md-sys-color-on-tertiary-container)',
+                        
+                        error: 'var(--md-sys-color-error)',
+                        onError: 'var(--md-sys-color-on-error)',
+                        errorContainer: 'var(--md-sys-color-error-container)',
+                        onErrorContainer: 'var(--md-sys-color-on-error-container)',
+                        
+                        surface: 'var(--md-sys-color-surface)',
+                        onSurface: 'var(--md-sys-color-on-surface)',
+                        surfaceVariant: 'var(--md-sys-color-surface-variant)',
+                        onSurfaceVariant: 'var(--md-sys-color-on-surface-variant)',
+                        outline: 'var(--md-sys-color-outline)',
+                        
+                        background: 'var(--md-sys-color-background)',
+                        onBackground: 'var(--md-sys-color-on-background)',
+                        
+                        surfaceContainerLow: 'var(--md-sys-color-surface-container-low)',
+                        surfaceContainerHigh: 'var(--md-sys-color-surface-container-high)',
+                        
+                        inverseSurface: 'var(--md-sys-color-inverse-surface)',
+                        inverseOnSurface: 'var(--md-sys-color-inverse-on-surface)',
+                    },
+                    fontFamily: {
+                        sans: ['Roboto', 'Inter', 'sans-serif'],
+                        display: ['Roboto', 'sans-serif'],
+                    },
+                    borderRadius: {
+                        'xl': '1rem',
+                        '2xl': '1.5rem',
+                        '3xl': '1.75rem', // M3 Standard for large containers
+                        '4xl': '2rem',
+                        '5xl': '2.5rem',
+                    },
+                    boxShadow: {
+                        'elevation-1': '0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 1px 3px 1px rgba(0, 0, 0, 0.15)',
+                        'elevation-2': '0px 1px 2px 0px rgba(0, 0, 0, 0.3), 0px 2px 6px 2px rgba(0, 0, 0, 0.15)',
+                        'elevation-3': '0px 4px 8px 3px rgba(0, 0, 0, 0.15), 0px 1px 3px 0px rgba(0, 0, 0, 0.3)',
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- Google Fonts: Roboto (M3 Standard) -->
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+    
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Rounded:opsz,wght,FILL,GRAD@24,400,1,0" />
+
+    <style>
+        body { font-family: 'Inter', sans-serif; }
+        /* Hide scrollbar for Chrome, Safari and Opera */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        /* Hide scrollbar for IE, Edge and Firefox */
+        .no-scrollbar {
+            -ms-overflow-style: none;  /* IE and Edge */
+            scrollbar-width: none;  /* Firefox */
+        }
+    </style>
+</head>
+<body class="bg-surfaceContainerLow text-onSurface antialiased overflow-hidden h-[100dvh] w-screen">
+
+    <div class="flex h-full w-full">
+        
+        <!-- Sidebar (Desktop Only) - M3 Navigation Drawer -->
+        <!-- Using inverseSurface for Light Mode (Dark Sidebar) and surfaceContainerLow for Dark Mode (Dark Sidebar) -->
+        <aside class="hidden md:flex w-80 flex-col bg-inverseSurface dark:bg-surfaceContainerLow text-inverseOnSurface dark:text-onSurface flex-shrink-0 transition-all duration-300 border-r border-outline/10 h-full shadow-elevation-none overflow-hidden">
+            <!-- Logo -->
+            <div class="p-6 flex items-center gap-3 pl-8">
+                <div class="h-10 w-10 rounded-xl bg-primaryContainer text-onPrimaryContainer flex items-center justify-center">
+                    <span class="material-symbols-rounded text-2xl">school</span>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold tracking-tight text-inverseOnSurface dark:text-onSurface font-display">English Coach</h1>
+                    <p class="text-xs text-inverseOnSurface/70 dark:text-onSurfaceVariant font-medium">AI Learning Platform</p>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 px-4 space-y-1 overflow-y-auto py-4">
+                <p class="px-4 text-xs font-bold text-inverseOnSurface/70 dark:text-onSurfaceVariant uppercase tracking-wider mb-4 mt-2 ml-2">Menu</p>
+                
+                <a href="{% url 'home' %}" class="flex items-center gap-4 px-6 py-4 rounded-full transition-all duration-200 group {% if request.resolver_match.url_name == 'home' %}bg-secondaryContainer text-onSecondaryContainer font-bold{% else %}text-inverseOnSurface/90 dark:text-onSurfaceVariant hover:bg-white/10 dark:hover:bg-surfaceVariant/50 hover:text-inverseOnSurface dark:hover:text-onSurface{% endif %}">
+                    <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'home' %}font-variation-fill{% endif %}">dashboard</span>
+                    <span class="text-sm tracking-wide">Dashboard</span>
+                </a>
+                
+                <a href="{% url 'conversation' %}" class="flex items-center gap-4 px-6 py-4 rounded-full transition-all duration-200 group {% if request.resolver_match.url_name == 'conversation' %}bg-secondaryContainer text-onSecondaryContainer font-bold{% else %}text-inverseOnSurface/90 dark:text-onSurfaceVariant hover:bg-white/10 dark:hover:bg-surfaceVariant/50 hover:text-inverseOnSurface dark:hover:text-onSurface{% endif %}">
+                    <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'conversation' %}font-variation-fill{% endif %}">mic</span>
+                    <span class="text-sm tracking-wide">Voice Coach</span>
+                </a>
+
+                <a href="{% url 'my_lessons' %}" class="flex items-center gap-4 px-6 py-4 rounded-full transition-all duration-200 group {% if request.resolver_match.url_name == 'my_lessons' %}bg-secondaryContainer text-onSecondaryContainer font-bold{% else %}text-inverseOnSurface/90 dark:text-onSurfaceVariant hover:bg-white/10 dark:hover:bg-surfaceVariant/50 hover:text-inverseOnSurface dark:hover:text-onSurface{% endif %}">
+                    <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'my_lessons' %}font-variation-fill{% endif %}">book</span>
+                    <span class="text-sm tracking-wide">My Lessons</span>
+                </a>
+
+                <a href="{% url 'library' %}" class="flex items-center gap-4 px-6 py-4 rounded-full transition-all duration-200 group {% if request.resolver_match.url_name == 'library' %}bg-secondaryContainer text-onSecondaryContainer font-bold{% else %}text-inverseOnSurface/90 dark:text-onSurfaceVariant hover:bg-white/10 dark:hover:bg-surfaceVariant/50 hover:text-inverseOnSurface dark:hover:text-onSurface{% endif %}">
+                    <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'library' %}font-variation-fill{% endif %}">local_library</span>
+                    <span class="text-sm tracking-wide">Library</span>
+                </a>
+
+                <a href="{% url 'progress' %}" class="flex items-center gap-4 px-6 py-4 rounded-full transition-all duration-200 group {% if request.resolver_match.url_name == 'progress' %}bg-secondaryContainer text-onSecondaryContainer font-bold{% else %}text-inverseOnSurface/90 dark:text-onSurfaceVariant hover:bg-white/10 dark:hover:bg-surfaceVariant/50 hover:text-inverseOnSurface dark:hover:text-onSurface{% endif %}">
+                    <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'progress' %}font-variation-fill{% endif %}">bar_chart</span>
+                    <span class="text-sm tracking-wide">Progress</span>
+                </a>
+
+                {% if user.is_superuser %}
+                <div class="my-4 border-t border-outline/20 mx-4"></div>
+                <p class="px-4 text-xs font-bold text-inverseOnSurface/70 dark:text-onSurfaceVariant uppercase tracking-wider mb-4 ml-2">Admin</p>
+                <a href="{% url 'admin_generate_book' %}" class="flex items-center gap-4 px-6 py-4 rounded-full transition-all duration-200 group {% if request.resolver_match.url_name == 'admin_generate_book' %}bg-secondaryContainer text-onSecondaryContainer font-bold{% else %}text-inverseOnSurface/90 dark:text-onSurfaceVariant hover:bg-white/10 dark:hover:bg-surfaceVariant/50 hover:text-inverseOnSurface dark:hover:text-onSurface{% endif %}">
+                    <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'admin_generate_book' %}font-variation-fill{% endif %}">auto_stories</span>
+                    <span class="text-sm tracking-wide">Generate Book</span>
+                </a>
+                {% endif %}
+            </nav>
+
+            <!-- User Profile (Bottom) -->
+            <div class="p-4 mt-auto mb-2 mx-2">
+                {% if user.is_authenticated %}
+                <div class="flex items-center gap-3 px-4 py-3 rounded-full hover:bg-white/10 dark:hover:bg-surfaceVariant/50 transition-colors cursor-pointer group">
+                    <div class="h-10 w-10 rounded-full bg-tertiaryContainer text-onTertiaryContainer flex items-center justify-center font-bold shadow-sm">
+                        {{ user.username|slice:":1"|upper }}
+                    </div>
+                    <div class="flex-1 min-w-0">
+                        <p class="text-sm font-bold text-inverseOnSurface dark:text-onSurface truncate">{{ user.username }}</p>
+                        <p class="text-xs text-inverseOnSurface/70 dark:text-onSurfaceVariant truncate">Student Account</p>
+                    </div>
+                    <form method="post" action="{% url 'account_logout' %}">
+                        {% csrf_token %}
+                        <button type="submit" class="p-2 rounded-full hover:bg-errorContainer hover:text-onErrorContainer text-inverseOnSurface/70 dark:text-onSurfaceVariant transition-colors" title="Logout">
+                            <span class="material-symbols-rounded text-xl">logout</span>
+                        </button>
+                    </form>
+                </div>
+                {% else %}
+                <a href="{% url 'account_login' %}" class="flex items-center justify-center gap-2 w-full py-3 px-4 bg-primary text-onPrimary rounded-full font-bold transition-all shadow-elevation-none hover:shadow-elevation-2">
+                    <span class="material-symbols-rounded">login</span>
+                    Log In
+                </a>
+                {% endif %}
+            </div>
+        </aside>
+
+        <!-- Main Content Wrapper -->
+        <div class="flex-1 flex flex-col h-full relative overflow-hidden bg-background">
+            
+            <!-- Mobile Header (Top Bar) -->
+            <header id="mobile-header" class="md:hidden h-16 bg-surface border-b border-surfaceVariant/50 flex items-center justify-between px-4 flex-shrink-0 z-50 fixed top-0 w-full transition-transform duration-300 ease-in-out">
+                <div class="flex items-center gap-3">
+                    <div class="h-8 w-8 rounded-lg bg-primaryContainer text-onPrimaryContainer flex items-center justify-center shadow-sm">
+                        <span class="material-symbols-rounded text-lg">school</span>
+                    </div>
+                    <span class="text-lg font-bold text-onSurface font-display">English Coach</span>
+                </div>
+                
+                <!-- Profile Dropdown Trigger -->
+                <div class="relative">
+                    <button onclick="toggleProfileMenu()" class="focus:outline-none">
+                        {% if user.is_authenticated %}
+                        <div class="h-8 w-8 rounded-full bg-tertiaryContainer text-onTertiaryContainer flex items-center justify-center font-bold text-xs border border-tertiaryContainer">
+                            {{ user.username|slice:":1"|upper }}
+                        </div>
+                        {% else %}
+                        <div class="h-8 w-8 rounded-full bg-surfaceVariant text-onSurfaceVariant flex items-center justify-center border border-outline/20">
+                            <span class="material-symbols-rounded text-lg">person</span>
+                        </div>
+                        {% endif %}
+                    </button>
+
+                    <!-- Dropdown Menu -->
+                    <div id="mobile-profile-menu" class="hidden absolute right-0 top-12 w-56 bg-surfaceContainerHigh rounded-[20px] shadow-elevation-2 border border-outline/10 py-2 z-50 transform origin-top-right transition-all">
+                        {% if user.is_authenticated %}
+                        <div class="px-4 py-3 border-b border-outline/10 mb-1">
+                            <p class="text-sm font-bold text-onSurface truncate">{{ user.username }}</p>
+                            <p class="text-xs text-onSurfaceVariant">Student</p>
+                        </div>
+                        <form method="post" action="{% url 'account_logout' %}">
+                            {% csrf_token %}
+                            <button type="submit" class="w-full text-left px-4 py-3 text-sm text-error hover:bg-errorContainer/20 flex items-center gap-3 font-medium">
+                                <span class="material-symbols-rounded text-xl">logout</span>
+                                Sign Out
+                            </button>
+                        </form>
+                        {% else %}
+                        <a href="{% url 'account_login' %}" class="block px-4 py-3 text-sm text-onSurface hover:bg-surfaceVariant/30 flex items-center gap-3 font-medium">
+                            <span class="material-symbols-rounded text-xl">login</span>
+                            Log In
+                        </a>
+                        <a href="{% url 'account_signup' %}" class="block px-4 py-3 text-sm text-primary hover:bg-primaryContainer/20 flex items-center gap-3 font-medium">
+                            <span class="material-symbols-rounded text-xl">person_add</span>
+                            Sign Up
+                        </a>
+                        {% endif %}
+                    </div>
+                </div>
+            </header>
+
+            <!-- Scrollable Content Area -->
+            <main id="main-content" class="flex-1 overflow-y-auto scroll-smooth relative w-full pt-16 pb-24" onclick="closeProfileMenu(event)">
+                {% block content %}{% endblock %}
+            </main>
+
+            <!-- Mobile Bottom Nav (Fixed) - M3 Navigation Bar -->
+            <nav class="md:hidden h-[80px] bg-surfaceContainerLow border-t border-surfaceVariant/50 flex justify-around items-center flex-shrink-0 z-40 pb-safe shadow-elevation-2 fixed bottom-0 w-full">
+                <a href="{% url 'home' %}" class="flex flex-col items-center justify-center w-full h-full space-y-1 group">
+                    <div class="h-8 w-16 rounded-full flex items-center justify-center transition-colors {% if request.resolver_match.url_name == 'home' %}bg-secondaryContainer text-onSecondaryContainer{% else %}text-onSurfaceVariant group-hover:bg-surfaceVariant/50{% endif %}">
+                        <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'home' %}font-variation-fill{% endif %}">dashboard</span>
+                    </div>
+                    <span class="text-[12px] font-medium {% if request.resolver_match.url_name == 'home' %}text-onSurface{% else %}text-onSurfaceVariant{% endif %}">Home</span>
+                </a>
+
+                <a href="{% url 'my_lessons' %}" class="flex flex-col items-center justify-center w-full h-full space-y-1 group">
+                    <div class="h-8 w-16 rounded-full flex items-center justify-center transition-colors {% if request.resolver_match.url_name == 'my_lessons' %}bg-secondaryContainer text-onSecondaryContainer{% else %}text-onSurfaceVariant group-hover:bg-surfaceVariant/50{% endif %}">
+                        <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'my_lessons' %}font-variation-fill{% endif %}">book</span>
+                    </div>
+                    <span class="text-[12px] font-medium {% if request.resolver_match.url_name == 'my_lessons' %}text-onSurface{% else %}text-onSurfaceVariant{% endif %}">Lessons</span>
+                </a>
+                
+                <a href="{% url 'conversation' %}" class="flex flex-col items-center justify-center w-full h-full space-y-1 group">
+                    <div class="h-14 w-14 rounded-2xl bg-primaryContainer text-onPrimaryContainer shadow-elevation-none flex items-center justify-center transition-transform active:scale-95 border border-primary/10">
+                        <span class="material-symbols-rounded text-[28px] font-variation-fill">mic</span>
+                    </div>
+                    <span class="text-[12px] font-bold text-onSurfaceVariant mt-1">Coach</span>
+                </a>
+
+                <a href="{% url 'library' %}" class="flex flex-col items-center justify-center w-full h-full space-y-1 group">
+                    <div class="h-8 w-16 rounded-full flex items-center justify-center transition-colors {% if request.resolver_match.url_name == 'library' %}bg-secondaryContainer text-onSecondaryContainer{% else %}text-onSurfaceVariant group-hover:bg-surfaceVariant/50{% endif %}">
+                        <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'library' %}font-variation-fill{% endif %}">local_library</span>
+                    </div>
+                    <span class="text-[12px] font-medium {% if request.resolver_match.url_name == 'library' %}text-onSurface{% else %}text-onSurfaceVariant{% endif %}">Library</span>
+                </a>
+
+                <a href="{% url 'progress' %}" class="flex flex-col items-center justify-center w-full h-full space-y-1 group">
+                    <div class="h-8 w-16 rounded-full flex items-center justify-center transition-colors {% if request.resolver_match.url_name == 'progress' %}bg-secondaryContainer text-onSecondaryContainer{% else %}text-onSurfaceVariant group-hover:bg-surfaceVariant/50{% endif %}">
+                        <span class="material-symbols-rounded text-[24px] {% if request.resolver_match.url_name == 'progress' %}font-variation-fill{% endif %}">bar_chart</span>
+                    </div>
+                    <span class="text-[12px] font-medium {% if request.resolver_match.url_name == 'progress' %}text-onSurface{% else %}text-onSurfaceVariant{% endif %}">Progress</span>
+                </a>
+            </nav>
+        </div>
+    </div>
+
+    <!-- Material Symbols Font Variation Settings for Filled Icons -->
+    <style>
+        .material-symbols-rounded {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .font-variation-fill {
+            font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        /* Safe area padding for iPhones with notch */
+        .pb-safe {
+            padding-bottom: env(safe-area-inset-bottom);
+        }
+        /* M3 Surface Colors for Tailwind - Now using CSS Variables */
+        .bg-surfaceContainerLow { background-color: var(--md-sys-color-surface-container-low); }
+        .bg-surfaceContainerHigh { background-color: var(--md-sys-color-surface-container-high); }
+    </style>
+
+    <script>
+        function toggleProfileMenu() {
+            const menu = document.getElementById('mobile-profile-menu');
+            menu.classList.toggle('hidden');
+        }
+
+        function closeProfileMenu(event) {
+            const menu = document.getElementById('mobile-profile-menu');
+            const button = event.target.closest('button');
+            if (!menu.classList.contains('hidden') && !button) {
+                menu.classList.add('hidden');
+            }
+        }
+
+        // Scroll-aware Mobile Header
+        document.addEventListener('DOMContentLoaded', function() {
+            const mainContent = document.getElementById('main-content');
+            const mobileHeader = document.getElementById('mobile-header');
+            let lastScrollTop = 0;
+
+            if (mainContent && mobileHeader) {
+                mainContent.addEventListener('scroll', () => {
+                    const scrollTop = mainContent.scrollTop;
+                    
+                    // Only trigger if scrolled more than header height to avoid initial jitter
+                    if (scrollTop > 64) {
+                        if (scrollTop > lastScrollTop) {
+                            // Scroll Down - Hide Header
+                            mobileHeader.classList.add('-translate-y-full');
+                        } else {
+                            // Scroll Up - Show Header
+                            mobileHeader.classList.remove('-translate-y-full');
+                        }
+                    } else {
+                        // Always show at top
+                        mobileHeader.classList.remove('-translate-y-full');
+                    }
+                    lastScrollTop = scrollTop;
+                });
+            }
+
+            // Practice Time Tracking (Heartbeat)
+            {% if user.is_authenticated %}
+            setInterval(() => {
+                if (document.visibilityState === 'visible') {
+                    fetch('{% url "update_practice_time" %}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRFToken': '{{ csrf_token }}'
+                        },
+                        body: JSON.stringify({ minutes: 1 })
+                    })
+                    .then(response => response.json())
+                    .then(data => console.log('Practice time updated:', data))
+                    .catch(error => console.error('Error updating practice time:', error));
+                }
+            }, 60000); // Run every 60 seconds
+            {% endif %}
+        });
+    </script>
+
+</body>
+</html>

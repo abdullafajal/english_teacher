@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <!-- Header -->
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h1 class="text-3xl font-display font-bold text-onSurface sm:truncate">
+                {{ lesson.title }}
+            </h1>
+            <div class="mt-2 flex items-center text-sm text-onSurfaceVariant">
+                <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-bold bg-primaryContainer text-onPrimaryContainer border border-primary/10">
+                    {{ lesson.topic.get_level_display }}
+                </span>
+            </div>
+        </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <!-- Main Content -->
+        <div class="lg:col-span-2 space-y-8">
+            <!-- Lesson Content -->
+            <div class="bg-surfaceContainerLow shadow-elevation-none rounded-[24px] border border-outline/10 overflow-hidden">
+                <div class="px-6 py-6">
+                    <div class="prose prose-lg max-w-none 
+                        prose-headings:text-onSurface prose-headings:font-display prose-headings:font-bold
+                        prose-p:text-onSurfaceVariant prose-p:leading-relaxed
+                        prose-a:text-primary prose-a:no-underline hover:prose-a:underline
+                        prose-strong:text-onSurface prose-strong:font-bold
+                        prose-ul:list-disc prose-ul:pl-6 prose-ul:text-onSurfaceVariant
+                        prose-ol:list-decimal prose-ol:pl-6 prose-ol:text-onSurfaceVariant
+                        prose-li:marker:text-outline
+                        prose-blockquote:border-l-4 prose-blockquote:border-primary prose-blockquote:bg-surfaceContainerHigh prose-blockquote:py-3 prose-blockquote:px-5 prose-blockquote:rounded-r-lg prose-blockquote:not-italic prose-blockquote:text-onSurface prose-blockquote:shadow-sm">
+                        {{ lesson.content_html|safe }}
+                    </div>
+                </div>
+            </div>
+
+            <!-- Conversational Practice -->
+            <div class="bg-surfaceContainerLow shadow-elevation-none rounded-[24px] border border-outline/10 overflow-hidden">
+                <div class="px-6 py-4 border-b border-outline/10 bg-surfaceContainerHigh/50">
+                    <h3 class="text-lg font-bold text-onSurface">
+                        Conversational Practice
+                    </h3>
+                </div>
+                <div class="px-6 py-6 bg-surfaceContainerLow">
+                    <div class="space-y-4">
+                        {% for turn in lesson.conversational_practice %}
+                        <div class="flex {% if turn.speaker == 'Person B' or turn.speaker == 'You' %}justify-end{% else %}justify-start{% endif %}">
+                            <div class="flex max-w-[80%] {% if turn.speaker == 'Person B' or turn.speaker == 'You' %}flex-row-reverse{% else %}flex-row{% endif %} items-end gap-3">
+                                <div class="h-8 w-8 rounded-full flex-shrink-0 flex items-center justify-center text-xs font-bold {% if turn.speaker == 'Person B' or turn.speaker == 'You' %}bg-primaryContainer text-onPrimaryContainer{% else %}bg-surfaceVariant text-onSurfaceVariant{% endif %} shadow-sm">
+                                    {{ turn.speaker|slice:":1" }}
+                                </div>
+                                <div class="px-4 py-3 rounded-[20px] text-sm {% if turn.speaker == 'Person B' or turn.speaker == 'You' %}bg-primary text-onPrimary rounded-br-none shadow-elevation-none{% else %}bg-surfaceContainerHigh text-onSurface rounded-bl-none border border-outline/10{% endif %}">
+                                    <p class="font-bold text-xs mb-1 opacity-75">{{ turn.speaker }}</p>
+                                    <p>{{ turn.text }}</p>
+                                </div>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Sidebar -->
+        <div class="space-y-8">
+            <!-- Summary -->
+            <div class="bg-surfaceContainerLow shadow-elevation-none rounded-[24px] border border-outline/10 overflow-hidden">
+                <div class="px-6 py-4 border-b border-outline/10 bg-surfaceContainerHigh/50">
+                    <h3 class="text-lg font-bold text-onSurface">
+                        Summary
+                    </h3>
+                </div>
+                <div class="px-6 py-6">
+                    <p class="text-sm text-onSurfaceVariant leading-relaxed">{{ lesson.summary }}</p>
+                </div>
+            </div>
+
+            <!-- Exercises -->
+            <div class="bg-surfaceContainerLow shadow-elevation-none rounded-[24px] border border-outline/10 overflow-hidden">
+                <div class="px-6 py-4 border-b border-outline/10 bg-surfaceContainerHigh/50">
+                    <h3 class="text-lg font-bold text-onSurface">
+                        Exercises
+                    </h3>
+                </div>
+                <div class="px-6 py-6 space-y-6">
+                    {% for exercise in lesson.exercises %}
+                    <div>
+                        <label class="block text-sm font-bold text-onSurface mb-3">{{ exercise.question }}</label>
+                        {% if exercise.options %}
+                        <div class="space-y-3">
+                            {% for option in exercise.options %}
+                            <div class="flex items-center">
+                                <input id="ex-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" name="exercise-{{ forloop.parentloop.counter }}" type="radio" class="h-4 w-4 text-primary border-outline/50 focus:ring-primary bg-surface">
+                                <label for="ex-{{ forloop.parentloop.counter }}-{{ forloop.counter }}" class="ml-3 block text-sm font-medium text-onSurfaceVariant">
+                                    {{ option }}
+                                </label>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% else %}
+                        <input type="text" class="block w-full rounded-[12px] border-outline/20 bg-surface shadow-sm focus:border-primary focus:ring-primary sm:text-sm px-4 py-3 text-onSurface placeholder-onSurfaceVariant/50">
+                        {% endif %}
+                        <div class="mt-3">
+                            <details class="text-sm group">
+                                <summary class="text-primary font-bold cursor-pointer hover:underline list-none flex items-center gap-1">
+                                    <span class="material-symbols-rounded text-lg group-open:rotate-90 transition-transform">chevron_right</span>
+                                    Show Answer
+                                </summary>
+                                <div class="mt-2 p-3 bg-tertiaryContainer/30 rounded-lg border border-tertiary/10">
+                                    <p class="text-tertiary font-medium">Correct: {{ exercise.answer }}</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Quiz -->
+            <div class="bg-surfaceContainerLow shadow-elevation-none rounded-[24px] border border-outline/10 overflow-hidden">
+                <div class="px-6 py-4 border-b border-outline/10 bg-surfaceContainerHigh/50">
+                    <h3 class="text-lg font-bold text-onSurface">
+                        Quiz
+                    </h3>
+                </div>
+                <div class="px-6 py-6 space-y-6">
+                    {% for q in lesson.quiz %}
+                    <div>
+                        <p class="text-sm font-bold text-onSurface mb-2">Q{{ forloop.counter }}: {{ q.question }}</p>
+                        <ul class="list-disc pl-5 text-sm text-onSurfaceVariant space-y-1 marker:text-outline">
+                            {% for opt in q.options %}
+                            <li>{{ opt }}</li>
+                            {% endfor %}
+                        </ul>
+                        <div class="mt-3">
+                            <details class="text-sm group">
+                                <summary class="text-primary font-bold cursor-pointer hover:underline list-none flex items-center gap-1">
+                                    <span class="material-symbols-rounded text-lg group-open:rotate-90 transition-transform">chevron_right</span>
+                                    Show Answer
+                                </summary>
+                                <div class="mt-2 p-3 bg-tertiaryContainer/30 rounded-lg border border-tertiary/10">
+                                    <p class="text-tertiary font-medium">Correct: {{ q.answer }}</p>
+                                </div>
+                            </details>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

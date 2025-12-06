@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Library - English Coach{% endblock %}
+
+{% block content %}
+<div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+    
+    <div class="flex items-center justify-between mb-8">
+        <div>
+            <h1 class="text-3xl font-display font-bold text-onSurface">Library</h1>
+            <p class="mt-2 text-onSurfaceVariant">AI-generated books tailored to your level.</p>
+        </div>
+        {% if user.is_superuser %}
+        <a href="{% url 'admin_generate_book' %}" class="inline-flex items-center px-4 py-2 border border-transparent rounded-full shadow-sm text-sm font-medium text-onPrimary bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary">
+            <span class="material-symbols-rounded mr-2 -ml-1 text-lg">add</span>
+            Generate Book
+        </a>
+        {% endif %}
+    </div>
+
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {% for book in books %}
+        <a href="{% url 'book_detail' book.id %}" class="group flex flex-col bg-surfaceContainerLow rounded-[24px] shadow-elevation-none hover:shadow-elevation-2 transition-all duration-200 overflow-hidden border border-outline/10 h-full">
+            <!-- Cover Placeholder -->
+            <div class="h-48 bg-surfaceVariant flex items-center justify-center relative overflow-hidden">
+                <div class="absolute inset-0 bg-gradient-to-br from-primaryContainer/50 to-secondaryContainer/50 opacity-50"></div>
+                <span class="material-symbols-rounded text-6xl text-onSurfaceVariant/20 transform group-hover:scale-110 transition-transform duration-500">auto_stories</span>
+                
+                <!-- Level Badge -->
+                <div class="absolute top-4 right-4">
+                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-surface/80 backdrop-blur-sm text-onSurface shadow-sm border border-outline/10">
+                        {{ book.get_level_display }}
+                    </span>
+                </div>
+            </div>
+            
+            <div class="p-5 flex-1 flex flex-col">
+                <h3 class="text-lg font-bold text-onSurface mb-2 line-clamp-2 group-hover:text-primary transition-colors">{{ book.title }}</h3>
+                <p class="text-sm text-onSurfaceVariant line-clamp-3 mb-4 flex-1">{{ book.description }}</p>
+                
+                <div class="flex items-center justify-between mt-auto pt-4 border-t border-outline/10">
+                    <span class="text-xs text-onSurfaceVariant font-medium">
+                        {{ book.created_at|date:"M d, Y" }}
+                    </span>
+                    <span class="inline-flex items-center text-sm font-medium text-primary group-hover:translate-x-1 transition-transform">
+                        Read
+                        <span class="material-symbols-rounded text-lg ml-1">arrow_forward</span>
+                    </span>
+                </div>
+            </div>
+        </a>
+        {% empty %}
+        <div class="col-span-full text-center py-12">
+            <div class="mx-auto h-12 w-12 text-onSurfaceVariant/50">
+                <span class="material-symbols-rounded text-5xl">library_books</span>
+            </div>
+            <h3 class="mt-2 text-sm font-medium text-onSurface">No books yet</h3>
+            <p class="mt-1 text-sm text-onSurfaceVariant">Check back later for new content.</p>
+        </div>
+        {% endfor %}
+    </div>
+</div>
+{% endblock %}

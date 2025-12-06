@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto py-12 px-4 sm:px-6 lg:px-8">
+    <div class="md:flex md:items-center md:justify-between mb-8">
+        <div class="flex-1 min-w-0">
+            <h1 class="text-3xl font-display font-bold text-onSurface sm:truncate">
+                Generate New Lesson
+            </h1>
+        </div>
+    </div>
+
+    <div class="bg-surfaceContainerLow shadow-elevation-none rounded-[28px] border border-outline/10 overflow-hidden">
+        <div class="px-6 py-8 sm:p-10">
+            <form action="" method="post" class="space-y-8">
+                {% csrf_token %}
+                <div>
+                    <label for="topic" class="block text-sm font-bold text-onSurface mb-2">Topic</label>
+                    <div class="mt-1">
+                        <input type="text" name="topic" id="topic" class="block w-full rounded-[12px] border-outline/20 bg-surface shadow-sm focus:border-primary focus:ring-primary sm:text-sm px-4 py-3 text-onSurface placeholder-onSurfaceVariant/50 transition-all" placeholder="e.g. Present Perfect Tense, Travel Vocabulary" required>
+                    </div>
+                </div>
+
+                <div>
+                    <label for="level" class="block text-sm font-bold text-onSurface mb-2">Level</label>
+                    <div class="mt-1 relative">
+                        <select id="level" name="level" class="block w-full rounded-[12px] border-outline/20 bg-surface shadow-sm focus:border-primary focus:ring-primary sm:text-sm px-4 py-3 text-onSurface appearance-none transition-all">
+                            <option value="A1">Beginner (A1)</option>
+                            <option value="A2">Elementary (A2)</option>
+                            <option value="B1">Intermediate (B1)</option>
+                            <option value="B2">Upper Intermediate (B2)</option>
+                            <option value="C1">Advanced (C1)</option>
+                            <option value="C2">Expert (C2)</option>
+                        </select>
+                        <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-onSurfaceVariant">
+                            <span class="material-symbols-rounded">expand_more</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="pt-6">
+                    <div class="flex justify-end">
+                        <button type="submit" class="inline-flex justify-center py-3 px-6 border border-transparent shadow-sm text-sm font-bold rounded-full text-onPrimary bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary transition-all items-center gap-2">
+                            <span class="material-symbols-rounded">auto_awesome</span>
+                            Generate Lesson
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
