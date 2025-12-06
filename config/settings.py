@@ -63,6 +63,18 @@ GEMINI_API_KEY = env('GEMINI_API_KEY')
 
 ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(',')
 
+# CSRF Configuration
+# Automatically trust origins from ALLOWED_HOSTS to fix login errors
+# CSRF Configuration
+# Automatically trust origins from ALLOWED_HOSTS to fix login errors
+CSRF_TRUSTED_ORIGINS = env.list('CSRF_TRUSTED_ORIGINS', default=[])
+if not CSRF_TRUSTED_ORIGINS and ALLOWED_HOSTS:
+    CSRF_TRUSTED_ORIGINS = [f'https://{host}' for host in ALLOWED_HOSTS] + [f'http://{host}' for host in ALLOWED_HOSTS]
+
+# Development settings to prevent "CSRF cookie not set"
+CSRF_COOKIE_SECURE = False
+CSRF_COOKIE_SAMESITE = 'Lax'
+SESSION_COOKIE_SECURE = False
 
 # Application definition
 
@@ -90,6 +102,7 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware", # Required by allauth
+    "coach.middleware.NoCacheMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"
