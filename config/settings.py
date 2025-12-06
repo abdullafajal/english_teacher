@@ -46,7 +46,7 @@ PWA_APP_ICONS = [
 PWA_APP_ICON_OPTIONS = {
     'maskable': True
 }
-PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static/js/serviceworker.js')
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static/js/sw.js')
 
 
 
