@@ -7,6 +7,8 @@
     <title>{% block title %}English Coach{% endblock %}</title>
     
     <!-- Tailwind CSS -->
+    {% load pwa %}
+    {% progressive_web_app_meta %}
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
         :root {

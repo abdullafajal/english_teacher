@@ -25,6 +25,32 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Take environment variables from .env file
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
+# PWA Configuration
+PWA_APP_NAME = 'AI English Coach'
+PWA_APP_DESCRIPTION = "Your personal AI English tutor for conversation practice."
+PWA_THEME_COLOR = '#006A6A'  # Primary color from theme
+PWA_BACKGROUND_COLOR = '#ffffff'
+PWA_DISPLAY = 'standalone'
+PWA_SCOPE = '/'
+PWA_START_URL = '/'
+PWA_APP_ICONS = [
+    {
+        'src': '/static/images/icons/icon-192x192.png',
+        'sizes': '192x192'
+    },
+    {
+        'src': '/static/images/icons/icon-512x512.png',
+        'sizes': '512x512'
+    }
+]
+PWA_APP_ICON_OPTIONS = {
+    'maskable': True
+}
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static/js/serviceworker.js')
+
+STATIC_URL = 'static/'
+STATICFILES_DIRS = [os.path.join(BASE_DIR, 'static')]
+
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/6.0/howto/deployment/checklist/
 
@@ -48,6 +74,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    'pwa',
     'django.contrib.sites',  # Required by allauth
     'allauth',
     'allauth.account',
