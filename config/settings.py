@@ -76,6 +76,11 @@ CSRF_COOKIE_SECURE = False
 CSRF_COOKIE_SAMESITE = 'Lax'
 SESSION_COOKIE_SECURE = False
 
+# Session settings - Never auto-logout
+SESSION_COOKIE_AGE = 60 * 60 * 24 * 365  # 1 year in seconds
+SESSION_EXPIRE_AT_BROWSER_CLOSE = False
+SESSION_SAVE_EVERY_REQUEST = True  # Refresh session on every request
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -102,7 +107,6 @@ MIDDLEWARE = [
     "django.contrib.messages.middleware.MessageMiddleware",
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
     "allauth.account.middleware.AccountMiddleware", # Required by allauth
-    "coach.middleware.NoCacheMiddleware",
 ]
 
 ROOT_URLCONF = "config.urls"

@@ -302,3 +302,60 @@ def update_practice_time(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     return JsonResponse({'error': 'Invalid request'}, status=400)
+
+import base64
+
+@login_required
+def voice_chat_api(request):
+    """Handle voice input using audio data."""
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            audio_base64 = data.get('audio')
+            mime_type = data.get('mime_type', 'audio/webm')
+            conversation_id = data.get('conversation_id')
+            
+            if not audio_base64:
+                return JsonResponse({'error': 'No audio data provided'}, status=400)
+            
+            # Get or create conversation
+            if conversation_id:
+                try:
+                    conversation = Conversation.objects.get(id=conversation_id, user=request.user)
+                    history = conversation.history
+                except Conversation.DoesNotExist:
+                    return JsonResponse({'error': 'Conversation not found'}, status=404)
+            else:
+                conversation = Conversation.objects.create(user=request.user)
+                history = []
+            
+            # Build Gemini history
+            gemini_history = []
+            for msg in history:
+                gemini_history.append({"role": "user", "parts": [msg['user']]})
+                gemini_history.append({"role": "model", "parts": [msg['ai']]})
+            
+            # Chat with AI using audio
+            coach = AICoach()
+            response_text = coach.chat_with_audio(gemini_history, audio_base64, mime_type)
+            
+            # Update history (store a placeholder for audio message)
+            history.append({'user': '[Voice Message]', 'ai': response_text})
+            conversation.history = history
+            conversation.save()
+            
+            # Update Practice Time
+            progress, _ = UserProgress.objects.get_or_create(user=request.user)
+            progress.practice_time_minutes += 1
+            progress.save()
+            
+            return JsonResponse({
+                'response': response_text,
+                'conversation_id': conversation.id
+            })
+            
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=500)
+    
+    return JsonResponse({'error': 'Invalid request'}, status=400)
+

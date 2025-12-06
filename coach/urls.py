@@ -18,5 +18,6 @@ urlpatterns = [
     path('superuser/book/<int:book_id>/unpublish/', views.admin_unpublish_book, name='admin_unpublish_book'),
     path('superuser/book/<int:book_id>/delete/', views.admin_delete_book, name='admin_delete_book'),
     path('chat-api/', views.chat_api, name='chat_api'),
+    path('voice-chat-api/', views.voice_chat_api, name='voice_chat_api'),
     path('api/update-time/', views.update_practice_time, name='update_practice_time'),
 ]

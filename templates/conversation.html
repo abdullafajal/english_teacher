@@ -1,518 +1,559 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Full Screen Container -->
-<!-- Mobile: Fixed Full Screen (z-50). Desktop: Relative (z-0), fits in layout, Header visible -->
-<div class="fixed inset-0 z-50 sm:relative sm:z-0 sm:inset-auto sm:h-[calc(100vh-4rem)] bg-surface flex items-center justify-center overflow-hidden">
+<!-- Phone Call Full Screen - Matching Project Theme -->
+<div id="call-screen" class="fixed inset-0 z-50 bg-surface flex flex-col overflow-hidden">
     
-    <!-- Background Blur/Gradient -->
-    <div class="absolute inset-0 bg-gradient-to-br from-primaryContainer/30 via-surface to-secondaryContainer/30 opacity-50"></div>
-    <div class="absolute inset-0 bg-[url('https://grainy-gradients.vercel.app/noise.svg')] opacity-10 brightness-100 contrast-150"></div>
+    <!-- Subtle Background Accent -->
+    <div class="absolute inset-0 overflow-hidden pointer-events-none">
+        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
+        <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-tertiary/5 rounded-full blur-3xl"></div>
+    </div>
 
-    <!-- Desktop Card Wrapper (Mobile: Full Screen) -->
-    <div class="relative w-full h-full sm:h-[85vh] sm:w-[400px] sm:rounded-[3rem] bg-surfaceContainerLow/50 backdrop-blur-xl border border-outline/10 shadow-elevation-3 flex flex-col overflow-hidden transition-all duration-500">
+    <!-- Header: Status & Timer -->
+    <div class="relative z-10 pt-safe px-6 pt-12 text-center">
+        <p id="call-status" class="text-onSurfaceVariant text-sm font-medium tracking-wide uppercase">Not Connected</p>
+        <p id="call-timer" class="text-onSurfaceVariant/60 text-xs font-mono mt-1 hidden">00:00</p>
+    </div>
+
+    <!-- Main Content: Avatar & Info -->
+    <div class="flex-1 flex flex-col items-center justify-center relative z-10 px-6">
         
-        <!-- Header -->
-        <div class="absolute top-0 left-0 right-0 p-6 flex justify-between items-start z-20">
-            <a href="{% url 'home' %}" class="p-2 rounded-full bg-surfaceVariant/50 hover:bg-surfaceVariant text-onSurfaceVariant transition-colors backdrop-blur-md">
-                <span class="material-symbols-rounded text-xl">arrow_back</span>
-            </a>
-            <button id="settings-btn" class="p-2 rounded-full bg-surfaceVariant/50 hover:bg-surfaceVariant text-onSurfaceVariant transition-colors backdrop-blur-md">
-                <span class="material-symbols-rounded text-xl">settings</span>
+        <!-- Avatar with Sound Animation -->
+        <div class="relative mb-8">
+            <!-- Listening/Speaking Rings -->
+            <div id="ring-1" class="absolute inset-[-15px] rounded-full border-2 border-white/0 transition-all duration-500"></div>
+            <div id="ring-2" class="absolute inset-[-30px] rounded-full border border-white/0 transition-all duration-500"></div>
+            <div id="ring-3" class="absolute inset-[-45px] rounded-full border border-white/0 transition-all duration-500"></div>
+            
+            <!-- Main Avatar -->
+            <div id="avatar-container" class="relative h-32 w-32 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 shadow-2xl shadow-purple-500/30 flex items-center justify-center transition-transform duration-500">
+                <span id="avatar-icon" class="material-symbols-rounded text-5xl text-white">smart_toy</span>
+            </div>
+        </div>
+
+        <!-- Name & Subtitle -->
+        <h1 class="text-onSurface text-2xl font-bold tracking-tight">AI English Coach</h1>
+        <p id="subtitle" class="text-onSurfaceVariant text-sm mt-1">Your personal tutor</p>
+
+        <!-- Live Captions -->
+        <div id="captions-area" class="mt-10 w-full max-w-md min-h-[120px] px-4">
+            <div id="user-caption" class="text-right mb-3 opacity-0 transition-opacity duration-300">
+                <span class="inline-block bg-surfaceVariant text-onSurfaceVariant px-4 py-2 rounded-2xl rounded-tr-sm text-sm"></span>
+            </div>
+            <div id="ai-caption" class="text-left opacity-0 transition-opacity duration-300">
+                <span class="inline-block bg-primaryContainer text-onPrimaryContainer px-4 py-2 rounded-2xl rounded-tl-sm text-sm"></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bottom Controls -->
+    <div class="relative z-10 pb-12 pt-6 px-8">
+        
+        <!-- Pre-Call: Start Button -->
+        <div id="pre-call-controls" class="flex justify-center">
+            <button id="start-call-btn" class="h-20 w-20 rounded-full bg-primary hover:bg-primary/90 text-onPrimary shadow-lg shadow-primary/30 flex items-center justify-center transition-all duration-300 active:scale-95 hover:scale-105">
+                <span class="material-symbols-rounded text-4xl">call</span>
             </button>
         </div>
 
-        <!-- Main Content (Avatar & Status) -->
-        <div class="flex-1 flex flex-col items-center justify-center relative z-10 p-6">
-            
-            <!-- Status Text -->
-            <div class="mb-8 text-center">
-                <h2 class="text-onSurface text-2xl font-display font-bold tracking-tight">AI Coach</h2>
-                <p id="status-text" class="text-primary text-sm font-medium mt-1 animate-pulse">Ready to call</p>
-            </div>
-
-            <!-- Avatar Container -->
-            <div class="relative">
-                <!-- Pulsing Rings (Animated via JS) -->
-                <div id="avatar-ring-1" class="absolute inset-0 rounded-full border border-primary/30 scale-100 opacity-0 transition-transform duration-1000"></div>
-                <div id="avatar-ring-2" class="absolute inset-0 rounded-full border border-primary/20 scale-100 opacity-0 transition-transform duration-1000 delay-150"></div>
-                
-                <!-- Main Avatar -->
-                <div class="relative h-40 w-40 rounded-full bg-gradient-to-tr from-primary to-tertiary shadow-elevation-2 flex items-center justify-center overflow-hidden z-10">
-                    <span class="material-symbols-rounded text-6xl text-onPrimary">smart_toy</span>
-                </div>
-            </div>
-
-            <!-- Live Captions Overlay -->
-            <div id="captions-container" class="mt-12 w-full min-h-[80px] flex flex-col items-center justify-center text-center space-y-2 px-4">
-                <p id="caption-text" class="text-onSurface/80 text-lg font-medium leading-relaxed drop-shadow-sm transition-opacity duration-300 opacity-0">
-                    <!-- Text goes here -->
-                </p>
-            </div>
-        </div>
-
-        <!-- Controls (Bottom Bar) -->
-        <div class="p-8 pb-12 bg-gradient-to-t from-surface to-transparent z-20">
-            <div class="flex items-center justify-center space-x-8">
-                
-                <!-- Mute / Secondary -->
-                <button class="p-4 rounded-full bg-surfaceVariant/50 hover:bg-surfaceVariant text-onSurfaceVariant transition-all backdrop-blur-md active:scale-95">
-                    <span class="material-symbols-rounded text-2xl">mic_off</span>
-                </button>
-
-                <!-- Main Action (Mic / Interrupt) -->
-                <button id="mic-btn" class="relative h-20 w-20 rounded-full bg-primaryContainer text-onPrimaryContainer shadow-elevation-2 flex items-center justify-center transition-all duration-200 active:scale-90 hover:scale-105 group">
-                    <span id="mic-icon" class="material-symbols-rounded text-4xl transition-all group-hover:scale-110">mic</span>
+        <!-- In-Call Controls -->
+        <div id="in-call-controls" class="hidden">
+            <div class="flex items-center justify-center gap-6">
+                <!-- Mute -->
+                <button id="mute-btn" class="h-14 w-14 rounded-full bg-surfaceVariant text-onSurfaceVariant flex items-center justify-center transition-all duration-200 active:scale-95 hover:bg-surfaceVariant/80">
+                    <span id="mute-icon" class="material-symbols-rounded text-2xl">mic</span>
                 </button>
 
                 <!-- End Call -->
-                <button id="end-call-btn" class="p-4 rounded-full bg-errorContainer/50 hover:bg-errorContainer text-error hover:text-onErrorContainer transition-all backdrop-blur-md active:scale-95 border border-error/10">
-                    <span class="material-symbols-rounded text-2xl">call_end</span>
+                <button id="end-call-btn" class="h-20 w-20 rounded-full bg-error hover:bg-error/90 text-onError shadow-lg shadow-error/30 flex items-center justify-center transition-all duration-300 active:scale-95">
+                    <span class="material-symbols-rounded text-4xl">call_end</span>
+                </button>
+
+                <!-- Speaker -->
+                <button id="speaker-btn" class="h-14 w-14 rounded-full bg-surfaceVariant text-onSurfaceVariant flex items-center justify-center transition-all duration-200 active:scale-95 hover:bg-surfaceVariant/80">
+                    <span id="speaker-icon" class="material-symbols-rounded text-2xl">volume_up</span>
                 </button>
             </div>
-        </div>
 
+            <!-- Voice Activity Indicator -->
+            <div class="flex justify-center mt-6 gap-1">
+                <div id="bar-1" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
+                <div id="bar-2" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
+                <div id="bar-3" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
+                <div id="bar-4" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
+                <div id="bar-5" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
+            </div>
+            <p id="voice-hint" class="text-center text-onSurfaceVariant/60 text-xs mt-2">Speak now...</p>
+        </div>
     </div>
 
-    <!-- Settings Modal (Glassmorphism) -->
-    <div id="settings-modal" class="fixed inset-0 z-[60] hidden" aria-labelledby="modal-title" role="dialog" aria-modal="true">
-        <div class="absolute inset-0 bg-scrim/50 backdrop-blur-sm transition-opacity" id="modal-backdrop"></div>
-        <div class="fixed inset-0 z-10 overflow-y-auto">
-            <div class="flex min-h-full items-center justify-center p-4 text-center">
-                <div class="relative transform overflow-hidden rounded-[28px] bg-surfaceContainerHigh border border-outline/10 text-left shadow-elevation-3 transition-all w-full max-w-sm">
-                    <div class="px-6 py-6">
-                        <h3 class="text-lg font-bold leading-6 text-onSurface mb-6">Voice Settings</h3>
-                        <div class="space-y-6">
-                            <div>
-                                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-2">Voice Persona</label>
-                                <select id="voice-select" class="block w-full rounded-xl border-0 bg-surfaceVariant/50 py-3 pl-4 pr-10 text-onSurface shadow-sm ring-1 ring-inset ring-outline/10 focus:ring-2 focus:ring-primary sm:text-sm sm:leading-6">
-                                    <option>Loading...</option>
-                                </select>
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-2">Speed: <span id="rate-value" class="text-onSurface">1.0</span>x</label>
-                                <input type="range" id="rate-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1 bg-surfaceVariant rounded-lg appearance-none cursor-pointer accent-primary">
-                            </div>
-                            <div>
-                                <label class="block text-xs font-bold text-primary uppercase tracking-wider mb-2">Pitch: <span id="pitch-value" class="text-onSurface">1.0</span></label>
-                                <input type="range" id="pitch-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1 bg-surfaceVariant rounded-lg appearance-none cursor-pointer accent-primary">
-                            </div>
-                        </div>
+    <!-- Settings Button -->
+    <button id="settings-btn" class="absolute top-12 right-6 z-20 p-2 rounded-full bg-surfaceVariant/50 text-onSurfaceVariant hover:bg-surfaceVariant transition-colors">
+        <span class="material-symbols-rounded text-xl">settings</span>
+    </button>
+
+    <!-- Back Button -->
+    <a href="{% url 'home' %}" class="absolute top-12 left-6 z-20 p-2 rounded-full bg-surfaceVariant/50 text-onSurfaceVariant hover:bg-surfaceVariant transition-colors">
+        <span class="material-symbols-rounded text-xl">arrow_back</span>
+    </a>
+</div>
+
+<!-- Settings Modal -->
+<div id="settings-modal" class="fixed inset-0 z-[60] hidden">
+    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-backdrop"></div>
+    <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
+        <div class="relative rounded-3xl bg-[#1e1e2e] border border-white/10 shadow-2xl w-full max-w-sm">
+            <div class="px-6 py-6">
+                <h3 class="text-lg font-bold text-white mb-6">Voice Settings</h3>
+                <div class="space-y-5">
+                    <div>
+                        <label class="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Voice</label>
+                        <select id="voice-select" class="block w-full rounded-xl border-0 bg-white/10 py-3 pl-4 pr-10 text-white ring-1 ring-white/10 focus:ring-2 focus:ring-purple-500 text-sm"></select>
                     </div>
-                    <div class="bg-surfaceContainerLow px-6 py-4 flex flex-row-reverse gap-3">
-                        <button type="button" id="save-settings" class="inline-flex w-full justify-center rounded-full bg-primary px-6 py-2.5 text-sm font-bold text-onPrimary shadow-sm hover:bg-primary/90 sm:w-auto transition-colors">Done</button>
-                        <button type="button" id="test-voice" class="inline-flex w-full justify-center rounded-full bg-surfaceVariant px-6 py-2.5 text-sm font-bold text-onSurfaceVariant shadow-sm hover:bg-surfaceVariant/80 sm:w-auto transition-colors">Test</button>
+                    <div>
+                        <label class="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Speed: <span id="rate-value" class="text-white">1.0</span>x</label>
+                        <input type="range" id="rate-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-purple-500">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Pitch: <span id="pitch-value" class="text-white">1.0</span></label>
+                        <input type="range" id="pitch-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-purple-500">
                     </div>
                 </div>
             </div>
+            <div class="px-6 py-4 flex gap-3 border-t border-white/10">
+                <button id="test-voice" class="flex-1 px-4 py-2.5 rounded-full bg-white/10 text-white text-sm font-bold hover:bg-white/20 transition-colors">Test Voice</button>
+                <button id="save-settings" class="flex-1 px-4 py-2.5 rounded-full bg-purple-500 text-white text-sm font-bold hover:bg-purple-400 transition-colors">Done</button>
+            </div>
         </div>
     </div>
-
 </div>
 
 <script>
-    // --- Constants & State ---
-    const STATE = {
-        IDLE: 'idle',           // Mic off, waiting for user
-        LISTENING: 'listening', // Mic on, waiting for speech
-        PROCESSING: 'processing', // Mic on (ignoring), AI thinking
-        SPEAKING: 'speaking'    // Mic on (barge-in), AI speaking
-    };
+document.addEventListener('DOMContentLoaded', () => {
+    // ===== Elements =====
+    const $ = id => document.getElementById(id);
+    
+    const callStatus = $('call-status');
+    const callTimer = $('call-timer');
+    const subtitle = $('subtitle');
+    const avatarContainer = $('avatar-container');
+    const avatarIcon = $('avatar-icon');
+    const rings = [$('ring-1'), $('ring-2'), $('ring-3')];
+    const bars = [$('bar-1'), $('bar-2'), $('bar-3'), $('bar-4'), $('bar-5')];
+    const voiceHint = $('voice-hint');
+    
+    const userCaption = $('user-caption').querySelector('span');
+    const aiCaption = $('ai-caption').querySelector('span');
+    const userCaptionWrap = $('user-caption');
+    const aiCaptionWrap = $('ai-caption');
+    
+    const preCallControls = $('pre-call-controls');
+    const inCallControls = $('in-call-controls');
+    const startCallBtn = $('start-call-btn');
+    const endCallBtn = $('end-call-btn');
+    const muteBtn = $('mute-btn');
+    const muteIcon = $('mute-icon');
+    const speakerBtn = $('speaker-btn');
+    const speakerIcon = $('speaker-icon');
 
-    // --- Configuration ---
-    const CONFIG = {
-        silenceDelay: 1500,     // Wait 1.5s silence before sending
-        restartDelay: 500,      // Wait 0.5s before restarting mic
-    };
+    // ===== State =====
+    let state = 'idle';
+    let conversationId = null;
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let voices = [];
+    let isMuted = false;
+    let isSpeakerOn = true;
+    let callStartTime = null;
+    let timerInterval = null;
+    let silenceTimer = null;
+    let analyserInterval = null;
+    let audioContext = null;
+    let analyser = null;
+    let mediaStream = null;
 
-    // --- UI Manager ---
-    class UIManager {
-        constructor() {
-            this.elements = {
-                micBtn: document.getElementById('mic-btn'),
-                micIcon: document.getElementById('mic-icon'),
-                statusText: document.getElementById('status-text'),
-                captionText: document.getElementById('caption-text'),
-                avatarRing1: document.getElementById('avatar-ring-1'),
-                avatarRing2: document.getElementById('avatar-ring-2'),
-                endCallBtn: document.getElementById('end-call-btn')
-            };
-            this.animationInterval = null;
-        }
+    const SILENCE_THRESHOLD = 2500;
 
-        update(state) {
-            const { micBtn, micIcon, statusText, captionText } = this.elements;
-
-            switch (state) {
-                case STATE.IDLE:
-                    statusText.textContent = "Tap mic to start call";
-                    statusText.className = "text-onSurfaceVariant/70 text-sm font-medium mt-1";
-                    micIcon.textContent = "mic_off";
-                    micBtn.className = "relative h-20 w-20 rounded-full bg-surfaceContainerHigh text-onSurfaceVariant shadow-elevation-none flex items-center justify-center transition-all duration-200 scale-100 hover:scale-105";
-                    this.stopPulse();
-                    captionText.style.opacity = '0';
-                    break;
-
-                case STATE.LISTENING:
-                    statusText.textContent = "Listening...";
-                    statusText.className = "text-primary text-sm font-medium mt-1 animate-pulse";
-                    micIcon.textContent = "mic";
-                    micBtn.className = "relative h-20 w-20 rounded-full bg-primaryContainer text-onPrimaryContainer shadow-elevation-3 flex items-center justify-center transition-all duration-200 scale-110 ring-4 ring-primary/30";
-                    this.startPulse();
-                    break;
-
-                case STATE.PROCESSING:
-                    statusText.textContent = "Thinking...";
-                    statusText.className = "text-tertiary text-sm font-medium mt-1";
-                    micIcon.textContent = "mic"; 
-                    micBtn.className = "relative h-20 w-20 rounded-full bg-surfaceVariant text-onSurfaceVariant shadow-elevation-none flex items-center justify-center transition-all duration-200 scale-100 opacity-80";
-                    this.stopPulse();
-                    break;
-
-                case STATE.SPEAKING:
-                    statusText.textContent = "Speaking... (Tap/Talk to interrupt)";
-                    statusText.className = "text-secondary text-sm font-medium mt-1";
-                    micIcon.textContent = "mic"; 
-                    micBtn.className = "relative h-20 w-20 rounded-full bg-primary text-onPrimary shadow-elevation-2 flex items-center justify-center transition-all duration-200 scale-100 hover:bg-primary/90 ring-4 ring-primary/20";
-                    this.stopPulse();
-                    break;
-            }
-        }
-
-        showError(message) {
-            const { micBtn, micIcon, statusText } = this.elements;
-            statusText.textContent = message;
-            statusText.className = "text-error text-sm font-medium mt-1";
-            micIcon.textContent = "error";
-            micBtn.className = "relative h-20 w-20 rounded-full bg-errorContainer text-error shadow-elevation-none flex items-center justify-center transition-all duration-200";
-            this.stopPulse();
-        }
-
-        showCaption(text) {
-            this.elements.captionText.textContent = `"${text}"`;
-            this.elements.captionText.style.opacity = '1';
-        }
-
-        startPulse() {
-            if (this.animationInterval) clearInterval(this.animationInterval);
-            const { avatarRing1, avatarRing2 } = this.elements;
+    // ===== Call Management =====
+    async function startCall() {
+        try {
+            mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
             
-            this.animationInterval = setInterval(() => {
-                avatarRing1.classList.remove('opacity-0', 'scale-100');
-                avatarRing1.classList.add('opacity-100', 'scale-150');
-                setTimeout(() => {
-                    avatarRing1.classList.remove('opacity-100', 'scale-150');
-                    avatarRing1.classList.add('opacity-0', 'scale-100');
-                }, 1000);
-
-                setTimeout(() => {
-                    avatarRing2.classList.remove('opacity-0', 'scale-100');
-                    avatarRing2.classList.add('opacity-100', 'scale-150');
-                    setTimeout(() => {
-                        avatarRing2.classList.remove('opacity-100', 'scale-150');
-                        avatarRing2.classList.add('opacity-0', 'scale-100');
-                    }, 1000);
-                }, 500);
-            }, 2000);
-        }
-
-        stopPulse() {
-            if (this.animationInterval) clearInterval(this.animationInterval);
-            const { avatarRing1, avatarRing2 } = this.elements;
-            avatarRing1.classList.remove('opacity-100', 'scale-150');
-            avatarRing1.classList.add('opacity-0', 'scale-100');
-            avatarRing2.classList.remove('opacity-100', 'scale-150');
-            avatarRing2.classList.add('opacity-0', 'scale-100');
+            audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            analyser = audioContext.createAnalyser();
+            const source = audioContext.createMediaStreamSource(mediaStream);
+            source.connect(analyser);
+            analyser.fftSize = 256;
+            
+            callStartTime = Date.now();
+            callTimer.classList.remove('hidden');
+            timerInterval = setInterval(updateTimer, 1000);
+            
+            preCallControls.classList.add('hidden');
+            inCallControls.classList.remove('hidden');
+            
+            startListening();
+            
+        } catch (err) {
+            console.error('Mic error:', err);
+            callStatus.textContent = 'Microphone access denied';
         }
     }
 
-    // --- Voice Manager ---
-    class VoiceManager {
-        constructor(uiManager) {
-            this.ui = uiManager;
-            this.state = STATE.IDLE;
-            this.recognition = null;
-            this.silenceTimer = null;
-            this.conversationId = null;
-            this.finalTranscript = '';
-            this.shouldBeListening = false; // Intent flag (is call active?)
-
-            this.setupRecognition();
-            this.setupSynthesis();
+    function endCall() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
         }
-
-        setupRecognition() {
-            if (!('webkitSpeechRecognition' in window) && !('SpeechRecognition' in window)) {
-                this.ui.showError("Browser not supported");
-                return;
-            }
-
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            this.recognition = new SpeechRecognition();
-            this.recognition.continuous = true;
-            this.recognition.interimResults = true;
-            this.recognition.lang = 'en-US';
-
-            this.recognition.onstart = () => {
-                console.log("Mic started");
-                if (this.state === STATE.IDLE) this.setState(STATE.LISTENING);
-            };
-
-            this.recognition.onend = () => {
-                console.log("Mic ended");
-                // Auto-restart if we should be listening
-                if (this.shouldBeListening) {
-                    setTimeout(() => {
-                        if (this.shouldBeListening) this.startMic();
-                    }, CONFIG.restartDelay);
-                } else {
-                    this.setState(STATE.IDLE);
-                }
-            };
-
-            this.recognition.onresult = (event) => this.handleResult(event);
-            this.recognition.onerror = (event) => this.handleError(event);
+        if (mediaStream) {
+            mediaStream.getTracks().forEach(t => t.stop());
         }
-
-        setupSynthesis() {
-            this.voices = [];
-            if (window.speechSynthesis) {
-                window.speechSynthesis.onvoiceschanged = () => {
-                    this.voices = window.speechSynthesis.getVoices();
-                    // Update settings UI if needed
-                };
-            }
+        if (audioContext) {
+            audioContext.close();
         }
-
-        setState(newState) {
-            console.log(`State: ${this.state} -> ${newState}`);
-            this.state = newState;
-            this.ui.update(newState);
-        }
-
-        startCall() {
-            this.shouldBeListening = true;
-            this.setState(STATE.LISTENING);
-            this.startMic();
-        }
-
-        endCall() {
-            this.shouldBeListening = false;
-            this.setState(STATE.IDLE);
-            this.stopMic();
-            window.speechSynthesis.cancel();
-            clearTimeout(this.silenceTimer);
-        }
-
-        startMic() {
-            try {
-                this.recognition.start();
-            } catch (e) {
-                // Ignore "already started" errors
-                if (e.name !== 'InvalidStateError') console.error("Mic start error:", e);
-            }
-        }
-
-        stopMic() {
-            try {
-                this.recognition.abort(); // Abort closes immediately
-            } catch (e) {}
-        }
-
-        handleResult(event) {
-            // 1. Barge-in Logic
-            if (this.state === STATE.SPEAKING) {
-                // If we detect speech while speaking, interrupt!
-                if (event.results.length > 0) {
-                    console.log("Barge-in detected!");
-                    window.speechSynthesis.cancel();
-                    this.setState(STATE.LISTENING);
-                }
-            }
-
-            // 2. Ignore if Processing
-            if (this.state === STATE.PROCESSING) return;
-
-            // 3. Process Transcript
-            let interim = '';
-            for (let i = event.resultIndex; i < event.results.length; ++i) {
-                if (event.results[i].isFinal) {
-                    this.finalTranscript += event.results[i][0].transcript;
-                } else {
-                    interim += event.results[i][0].transcript;
-                }
-            }
-
-            this.ui.showCaption(this.finalTranscript + interim);
-            clearTimeout(this.silenceTimer);
-
-            // 4. Silence Timer (Auto-send)
-            if (this.finalTranscript || interim) {
-                this.silenceTimer = setTimeout(() => this.sendInput(), CONFIG.silenceDelay);
-            }
-        }
-
-        handleError(event) {
-            if (event.error === 'no-speech') return; // Normal
-            if (event.error === 'not-allowed') {
-                this.shouldBeListening = false;
-                this.ui.showError("Mic Access Denied");
-            }
-            console.warn("Recognition Error:", event.error);
-        }
-
-        async sendInput() {
-            if (!this.finalTranscript.trim()) return;
-
-            const text = this.finalTranscript;
-            this.finalTranscript = ''; // Clear buffer
-            this.setState(STATE.PROCESSING);
-
-            try {
-                const response = await fetch('/chat-api/', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'X-CSRFToken': '{{ csrf_token }}'
-                    },
-                    body: JSON.stringify({ message: text, conversation_id: this.conversationId })
-                });
-
-                if (!response.ok) throw new Error('API Error');
-                const data = await response.json();
-                
-                if (data.conversation_id) this.conversationId = data.conversation_id;
-                this.ui.showCaption(data.response);
-                this.speak(data.response);
-
-            } catch (e) {
-                console.error(e);
-                this.ui.showError("Connection Error");
-                this.shouldBeListening = false; // Stop on fatal error
-            }
-        }
-
-        speak(text) {
-            if (!window.speechSynthesis) return;
-
-            this.setState(STATE.SPEAKING);
-            const utterance = new SpeechSynthesisUtterance(text);
-            
-            // Apply Settings
-            const rate = parseFloat(localStorage.getItem('speechRate')) || 1.0;
-            const pitch = parseFloat(localStorage.getItem('speechPitch')) || 1.0;
-            const voiceURI = localStorage.getItem('voiceURI');
-            
-            utterance.rate = rate;
-            utterance.pitch = pitch;
-            if (voiceURI) {
-                const voice = this.voices.find(v => v.voiceURI === voiceURI);
-                if (voice) utterance.voice = voice;
-            }
-
-            utterance.onend = () => {
-                // Only go back to listening if we weren't interrupted (still in SPEAKING state)
-                // or if we are still active.
-                if (this.shouldBeListening) {
-                    this.setState(STATE.LISTENING);
-                    // Ensure mic is running (Android fix)
-                    this.startMic(); 
-                }
-            };
-
-            utterance.onerror = (e) => {
-                console.error("TTS Error", e);
-                if (this.shouldBeListening) this.setState(STATE.LISTENING);
-            };
-
-            window.speechSynthesis.speak(utterance);
-        }
-    }
-
-    // --- Initialization ---
-    document.addEventListener('DOMContentLoaded', () => {
-        const ui = new UIManager();
-        const voice = new VoiceManager(ui);
-
-        // Bind Controls
-        document.getElementById('mic-btn').addEventListener('click', () => {
-            if (voice.state === STATE.SPEAKING) {
-                // Manual Interrupt
-                window.speechSynthesis.cancel();
-                voice.setState(STATE.LISTENING);
-            } else if (voice.shouldBeListening) {
-                // Stop
-                voice.endCall();
-            } else {
-                // Start
-                voice.startCall();
-            }
-        });
-
-        document.getElementById('end-call-btn').addEventListener('click', () => {
-            voice.endCall();
-        });
-
-        // Settings Logic (Preserved from original, simplified binding)
-        // ... (Keep existing settings UI logic if needed, or assume it's handled globally)
-        // For brevity, I'm assuming the settings modal logic is separate or can be re-added if requested.
-        // Re-adding essential settings logic below for completeness:
+        window.speechSynthesis.cancel();
+        clearInterval(timerInterval);
+        clearInterval(analyserInterval);
+        clearTimeout(silenceTimer);
         
-        const settingsBtn = document.getElementById('settings-btn');
-        const settingsModal = document.getElementById('settings-modal');
-        const modalBackdrop = document.getElementById('modal-backdrop');
-        const saveSettingsBtn = document.getElementById('save-settings');
-        const testVoiceBtn = document.getElementById('test-voice');
-        const voiceSelect = document.getElementById('voice-select');
-        const rateRange = document.getElementById('rate-range');
-        const pitchRange = document.getElementById('pitch-range');
-        const rateValue = document.getElementById('rate-value');
-        const pitchValue = document.getElementById('pitch-value');
+        conversationId = null;
+        callStartTime = null;
+        state = 'idle';
+        
+        callStatus.textContent = 'Call Ended';
+        callTimer.classList.add('hidden');
+        preCallControls.classList.remove('hidden');
+        inCallControls.classList.add('hidden');
+        userCaptionWrap.style.opacity = '0';
+        aiCaptionWrap.style.opacity = '0';
+        stopRings();
+        resetBars();
+        
+        setTimeout(() => {
+            callStatus.textContent = 'Not Connected';
+            subtitle.textContent = 'Your personal tutor';
+        }, 2000);
+    }
 
-        // Load initial values
-        rateRange.value = localStorage.getItem('speechRate') || 1.0;
-        pitchRange.value = localStorage.getItem('speechPitch') || 1.0;
-        rateValue.textContent = rateRange.value;
-        pitchValue.textContent = pitchRange.value;
+    function updateTimer() {
+        const elapsed = Math.floor((Date.now() - callStartTime) / 1000);
+        const mins = Math.floor(elapsed / 60).toString().padStart(2, '0');
+        const secs = (elapsed % 60).toString().padStart(2, '0');
+        callTimer.textContent = `${mins}:${secs}`;
+    }
 
-        // Populate voices
-        function populateVoices() {
-            const voices = window.speechSynthesis.getVoices();
-            voiceSelect.innerHTML = '';
-            voices.forEach(v => {
-                const opt = document.createElement('option');
-                opt.value = v.voiceURI;
-                opt.textContent = `${v.name} (${v.lang})`;
-                if (v.voiceURI === localStorage.getItem('voiceURI')) opt.selected = true;
-                voiceSelect.appendChild(opt);
+    // ===== Voice Activity Detection & Recording =====
+    function startListening() {
+        if (isMuted) {
+            callStatus.textContent = 'Muted';
+            voiceHint.textContent = 'Unmute to speak';
+            return;
+        }
+
+        state = 'listening';
+        callStatus.textContent = 'Listening';
+        voiceHint.textContent = 'Speak now...';
+        avatarIcon.textContent = 'hearing';
+        avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-primary to-secondary shadow-2xl shadow-primary/30 flex items-center justify-center transition-transform duration-500';
+        startRings('listening');
+        
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
+            ? 'audio/webm;codecs=opus' 
+            : 'audio/webm';
+        
+        mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
+        audioChunks = [];
+        
+        mediaRecorder.ondataavailable = (e) => {
+            if (e.data.size > 0) audioChunks.push(e.data);
+        };
+        
+        mediaRecorder.onstop = () => {
+            if (audioChunks.length > 0 && state !== 'idle') {
+                const blob = new Blob(audioChunks, { type: mimeType });
+                sendAudio(blob, mimeType.split(';')[0]);
+            }
+        };
+        
+        mediaRecorder.start();
+        startVoiceMonitor();
+    }
+
+    function startVoiceMonitor() {
+        let lastSoundTime = Date.now();
+        let hasSpoken = false;
+        
+        const dataArray = new Uint8Array(analyser.frequencyBinCount);
+        
+        analyserInterval = setInterval(() => {
+            analyser.getByteFrequencyData(dataArray);
+            const average = dataArray.reduce((a, b) => a + b) / dataArray.length;
+            
+            updateBars(average);
+            
+            if (average > 30) {
+                lastSoundTime = Date.now();
+                hasSpoken = true;
+                clearTimeout(silenceTimer);
+            } else if (hasSpoken && Date.now() - lastSoundTime > SILENCE_THRESHOLD) {
+                clearInterval(analyserInterval);
+                stopRecording();
+            }
+        }, 100);
+    }
+
+    function stopRecording() {
+        if (mediaRecorder && mediaRecorder.state === 'recording') {
+            mediaRecorder.stop();
+            setState('processing');
+        }
+    }
+
+    function updateBars(level) {
+        const normalizedLevel = Math.min(level / 50, 1);
+        bars.forEach((bar, i) => {
+            const height = 3 + Math.random() * normalizedLevel * 20;
+            bar.style.height = `${height}px`;
+            bar.style.backgroundColor = normalizedLevel > 0.3 ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)';
+        });
+    }
+
+    function resetBars() {
+        bars.forEach(bar => {
+            bar.style.height = '12px';
+            bar.style.backgroundColor = 'var(--md-sys-color-outline)';
+        });
+    }
+
+    // ===== API =====
+    async function sendAudio(blob, mimeType) {
+        setState('processing');
+        
+        try {
+            const base64 = await blobToBase64(blob);
+            
+            const response = await fetch('/voice-chat-api/', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRFToken': '{{ csrf_token }}'
+                },
+                body: JSON.stringify({
+                    audio: base64,
+                    mime_type: mimeType,
+                    conversation_id: conversationId
+                })
             });
+            
+            if (!response.ok) throw new Error('API Error');
+            const data = await response.json();
+            
+            if (data.conversation_id) conversationId = data.conversation_id;
+            
+            aiCaption.textContent = data.response;
+            aiCaptionWrap.style.opacity = '1';
+            
+            speak(data.response);
+            
+        } catch (err) {
+            console.error('API Error:', err);
+            callStatus.textContent = 'Connection error';
+            setTimeout(() => startListening(), 2000);
         }
-        if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = populateVoices;
-        populateVoices();
+    }
 
-        // Event Listeners
-        settingsBtn.addEventListener('click', () => settingsModal.classList.remove('hidden'));
-        saveSettingsBtn.addEventListener('click', () => settingsModal.classList.add('hidden'));
-        modalBackdrop.addEventListener('click', () => settingsModal.classList.add('hidden'));
+    function blobToBase64(blob) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onloadend = () => resolve(reader.result.split(',')[1]);
+            reader.onerror = reject;
+            reader.readAsDataURL(blob);
+        });
+    }
+
+    // ===== Text-to-Speech =====
+    function speak(text) {
+        if (!window.speechSynthesis || !isSpeakerOn || !text) {
+            setTimeout(() => startListening(), 500);
+            return;
+        }
         
-        rateRange.addEventListener('input', (e) => {
-            localStorage.setItem('speechRate', e.target.value);
-            rateValue.textContent = e.target.value;
-        });
-        pitchRange.addEventListener('input', (e) => {
-            localStorage.setItem('speechPitch', e.target.value);
-            pitchValue.textContent = e.target.value;
-        });
-        voiceSelect.addEventListener('change', (e) => localStorage.setItem('voiceURI', e.target.value));
+        setState('speaking');
         
-        testVoiceBtn.addEventListener('click', () => {
-            const u = new SpeechSynthesisUtterance("Hello there! I am your AI English coach. This is an example of how my voice sounds when we practice together.");
-            u.rate = parseFloat(rateRange.value);
-            u.pitch = parseFloat(pitchRange.value);
-            const v = window.speechSynthesis.getVoices().find(v => v.voiceURI === voiceSelect.value);
-            if (v) u.voice = v;
-            window.speechSynthesis.speak(u);
+        // Simple approach - no workarounds
+        const msg = new SpeechSynthesisUtterance();
+        msg.text = text;
+        msg.rate = parseFloat(localStorage.getItem('speechRate')) || 1.0;
+        msg.pitch = parseFloat(localStorage.getItem('speechPitch')) || 1.0;
+        msg.volume = 1.0;
+        
+        // Set voice if saved
+        const voiceURI = localStorage.getItem('voiceURI');
+        if (voiceURI && voices.length > 0) {
+            const voice = voices.find(v => v.voiceURI === voiceURI);
+            if (voice) msg.voice = voice;
+        }
+        
+        msg.onend = function() {
+            startListening();
+        };
+        
+        msg.onerror = function(e) {
+            console.log('Speech error:', e);
+            startListening();
+        };
+        
+        // Speak directly
+        speechSynthesis.cancel();
+        speechSynthesis.speak(msg);
+    }
+
+    // ===== State Management =====
+    function setState(newState) {
+        state = newState;
+        
+        switch (newState) {
+            case 'listening':
+                callStatus.textContent = 'Listening';
+                voiceHint.textContent = 'Speak now...';
+                avatarIcon.textContent = 'hearing';
+                avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-primary to-secondary shadow-2xl shadow-primary/30 flex items-center justify-center transition-transform duration-500';
+                startRings('listening');
+                break;
+                
+            case 'processing':
+                callStatus.textContent = 'Processing';
+                voiceHint.textContent = 'Understanding...';
+                avatarIcon.textContent = 'psychology';
+                avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-tertiary to-secondary shadow-2xl shadow-tertiary/30 flex items-center justify-center transition-transform duration-500 animate-pulse';
+                stopRings();
+                resetBars();
+                break;
+                
+            case 'speaking':
+                callStatus.textContent = 'AI Speaking';
+                voiceHint.textContent = 'Listening...';
+                avatarIcon.textContent = 'record_voice_over';
+                avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-primary to-tertiary shadow-2xl shadow-primary/30 flex items-center justify-center transition-transform duration-500';
+                startRings('speaking');
+                break;
+        }
+    }
+
+    // ===== Visual Effects =====
+    let ringInterval = null;
+    
+    function startRings(type) {
+        stopRings();
+        const color = type === 'listening' ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-tertiary)';
+        let scale = 0;
+        
+        ringInterval = setInterval(() => {
+            scale = (scale + 1) % 3;
+            rings.forEach((ring, i) => {
+                const s = 1 + ((scale + i) % 3) * 0.15;
+                const o = 1 - ((scale + i) % 3) * 0.3;
+                ring.style.transform = `scale(${s})`;
+                ring.style.borderColor = color;
+                ring.style.opacity = o;
+            });
+        }, 400);
+    }
+
+    function stopRings() {
+        if (ringInterval) clearInterval(ringInterval);
+        rings.forEach(ring => {
+            ring.style.borderColor = 'transparent';
+            ring.style.opacity = '0';
         });
+    }
+
+    // ===== Controls =====
+    function toggleMute() {
+        isMuted = !isMuted;
+        muteIcon.textContent = isMuted ? 'mic_off' : 'mic';
+        muteBtn.classList.toggle('bg-red-500/50', isMuted);
+        
+        if (isMuted && state === 'listening') {
+            if (mediaRecorder && mediaRecorder.state === 'recording') {
+                mediaRecorder.stop();
+            }
+            clearInterval(analyserInterval);
+            callStatus.textContent = 'Muted';
+            voiceHint.textContent = 'Unmute to speak';
+            stopRings();
+            resetBars();
+        } else if (!isMuted && state !== 'speaking') {
+            startListening();
+        }
+    }
+
+    function toggleSpeaker() {
+        isSpeakerOn = !isSpeakerOn;
+        speakerIcon.textContent = isSpeakerOn ? 'volume_up' : 'volume_off';
+        speakerBtn.classList.toggle('bg-white/30', !isSpeakerOn);
+    }
+
+    // ===== Event Listeners =====
+    startCallBtn.addEventListener('click', startCall);
+    endCallBtn.addEventListener('click', endCall);
+    muteBtn.addEventListener('click', toggleMute);
+    speakerBtn.addEventListener('click', toggleSpeaker);
+
+    // ===== Settings =====
+    function loadVoices() {
+        voices = window.speechSynthesis.getVoices();
+        const voiceSelect = $('voice-select');
+        voiceSelect.innerHTML = '';
+        voices.forEach(v => {
+            const opt = document.createElement('option');
+            opt.value = v.voiceURI;
+            opt.textContent = `${v.name} (${v.lang})`;
+            if (v.voiceURI === localStorage.getItem('voiceURI')) opt.selected = true;
+            voiceSelect.appendChild(opt);
+        });
+    }
+
+    if (speechSynthesis.onvoiceschanged !== undefined) {
+        speechSynthesis.onvoiceschanged = loadVoices;
+    }
+    loadVoices();
+
+    $('rate-range').value = localStorage.getItem('speechRate') || 1.0;
+    $('pitch-range').value = localStorage.getItem('speechPitch') || 1.0;
+    $('rate-value').textContent = $('rate-range').value;
+    $('pitch-value').textContent = $('pitch-range').value;
+
+    $('settings-btn').addEventListener('click', () => $('settings-modal').classList.remove('hidden'));
+    $('save-settings').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
+    $('modal-backdrop').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
+
+    $('rate-range').addEventListener('input', (e) => {
+        localStorage.setItem('speechRate', e.target.value);
+        $('rate-value').textContent = e.target.value;
     });
+
+    $('pitch-range').addEventListener('input', (e) => {
+        localStorage.setItem('speechPitch', e.target.value);
+        $('pitch-value').textContent = e.target.value;
+    });
+
+    $('voice-select').addEventListener('change', (e) => {
+        localStorage.setItem('voiceURI', e.target.value);
+    });
+
+    $('test-voice').addEventListener('click', () => {
+        const u = new SpeechSynthesisUtterance("Hello! I am your AI English coach.");
+        u.rate = parseFloat($('rate-range').value);
+        u.pitch = parseFloat($('pitch-range').value);
+        const v = voices.find(v => v.voiceURI === $('voice-select').value);
+        if (v) u.voice = v;
+        window.speechSynthesis.speak(u);
+    });
+});
 </script>
+
+<style>
+    .pt-safe { padding-top: env(safe-area-inset-top); }
+</style>
 {% endblock %}

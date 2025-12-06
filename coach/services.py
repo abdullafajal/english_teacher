@@ -85,6 +85,26 @@ class AICoach:
         except Exception as e:
             return f"I'm having trouble connecting right now. Please check your connection or API key. (Error: {str(e)})"
 
+    def chat_with_audio(self, history, audio_data, mime_type="audio/webm"):
+        """Conducts a conversation using audio input."""
+        try:
+            # Create audio part for Gemini
+            audio_part = {
+                "inline_data": {
+                    "mime_type": mime_type,
+                    "data": audio_data  # base64 encoded
+                }
+            }
+            
+            chat_session = self.model.start_chat(history=history)
+            response = chat_session.send_message([
+                "The user sent a voice message. Listen to it and respond naturally as their English tutor. If you can't understand the audio, ask them to repeat.",
+                audio_part
+            ])
+            return response.text
+        except Exception as e:
+            return f"I couldn't process your voice message. Please try again. (Error: {str(e)})"
+
     def generate_lesson(self, topic, level):
         prompt = f"""
         Generate a complete English lesson for the topic '{topic}' at level '{level}'.
