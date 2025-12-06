@@ -62,7 +62,7 @@ DEBUG = env('DEBUG')
 
 GEMINI_API_KEY = env('GEMINI_API_KEY')
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = env('ALLOWED_HOSTS').split(',')
 
 
 # Application definition
