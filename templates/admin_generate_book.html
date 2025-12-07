@@ -73,6 +73,9 @@
                         <a href="{% url 'admin_book_preview' book.id %}" class="inline-flex items-center p-2 border border-transparent rounded-full shadow-sm text-onPrimary bg-primary hover:bg-primary/90 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary" title="Edit Draft">
                             <span class="material-symbols-rounded text-sm">edit</span>
                         </a>
+                        <a href="{% url 'admin_generate_book_content' book.id %}" class="inline-flex items-center p-2 border border-transparent rounded-full text-onTertiaryContainer bg-tertiaryContainer hover:bg-tertiaryContainer/80 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-tertiary" title="Generate Full Content">
+                            <span class="material-symbols-rounded text-sm">auto_awesome</span>
+                        </a>
                         <a href="{% url 'admin_publish_book' book.id %}" class="inline-flex items-center p-2 border border-transparent rounded-full text-tertiary hover:bg-tertiaryContainer focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-tertiary transition-colors" title="Publish">
                             <span class="material-symbols-rounded text-sm">publish</span>
                         </a>

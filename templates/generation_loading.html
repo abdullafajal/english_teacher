@@ -85,11 +85,19 @@ function rotateFunMessage() {
 rotateFunMessage();
 setInterval(rotateFunMessage, 3000);
 
-// Poll for status
+// Poll for status - prevent concurrent calls
+let isPolling = false;
+
 function checkStatus() {
+    // Prevent multiple concurrent calls
+    if (isPolling) return;
+    isPolling = true;
+    
     fetch(`/api/generation/${taskId}/`)
         .then(res => res.json())
         .then(data => {
+            isPolling = false;
+            
             if (data.status === 'completed') {
                 statusText.textContent = 'Done! Redirecting...';
                 statusSpinner.classList.add('hidden');
@@ -112,22 +120,23 @@ function checkStatus() {
                 
             } else if (data.status === 'processing') {
                 statusText.textContent = 'AI is creating your content...';
-                // Continue polling
-                setTimeout(checkStatus, 2000);
+                // Continue polling after delay
+                setTimeout(checkStatus, 3000);
                 
             } else {
                 // Still pending
                 statusText.textContent = 'Starting generation...';
-                setTimeout(checkStatus, 1500);
+                setTimeout(checkStatus, 2000);
             }
         })
         .catch(err => {
+            isPolling = false;
             console.error('Status check failed:', err);
-            setTimeout(checkStatus, 3000);
+            setTimeout(checkStatus, 5000);
         });
 }
 
-// Start polling
-setTimeout(checkStatus, 1500);
+// Start polling after initial delay
+setTimeout(checkStatus, 2000);
 </script>
 {% endblock %}

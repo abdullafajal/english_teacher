@@ -19,7 +19,8 @@ class Topic(models.Model):
         return f"{self.name} ({self.level})"
 
 class Lesson(models.Model):
-    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='lessons')
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='lessons', null=True, blank=True)
+    topic = models.ForeignKey(Topic, on_delete=models.CASCADE, related_name='topic_lessons')
     title = models.CharField(max_length=200)
     summary = models.TextField()
     content = models.TextField(help_text="Markdown content")

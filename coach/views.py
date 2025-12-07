@@ -25,7 +25,8 @@ def home(request):
 
 @login_required
 def my_lessons_view(request):
-    lessons = Lesson.objects.all().order_by('-created_at')
+    # Show only user's own lessons
+    lessons = Lesson.objects.filter(user=request.user).order_by('-created_at')
     return render(request, 'lesson_list.html', {'lessons': lessons})
 
 @login_required
@@ -74,8 +75,9 @@ def generate_lesson_background(task_id, topic_name, level):
         # Get or create topic
         topic, _ = Topic.objects.get_or_create(name=topic_name, level=level)
         
-        # Save lesson
+        # Save lesson with user from task
         lesson = Lesson.objects.create(
+            user=task.user,
             topic=topic,
             title=lesson_data.get('title', 'Untitled Lesson'),
             summary=lesson_data.get('summary', ''),
@@ -120,7 +122,9 @@ def generation_status_api(request, task_id):
         if task.task_type == 'lesson':
             data['redirect_url'] = f'/lesson/{task.result_id}/'
         elif task.task_type == 'book':
-            data['redirect_url'] = f'/book/{task.result_id}/'
+            data['redirect_url'] = f'/superuser/book/{task.result_id}/preview/'
+        elif task.task_type == 'chapter':
+            data['redirect_url'] = f'/library/book/{task.result_id}/'
     elif task.status == 'failed':
         data['error'] = task.error_message
     
@@ -129,7 +133,11 @@ def generation_status_api(request, task_id):
 
 @login_required
 def lesson_detail(request, lesson_id):
-    lesson = get_object_or_404(Lesson, pk=lesson_id)
+    # Only allow viewing own lessons (or admin can view all)
+    if request.user.is_superuser:
+        lesson = get_object_or_404(Lesson, pk=lesson_id)
+    else:
+        lesson = get_object_or_404(Lesson, pk=lesson_id, user=request.user)
     
     # Mark as completed (Simple logic for now: viewing = completing)
     progress, created = UserProgress.objects.get_or_create(user=request.user)
@@ -157,6 +165,67 @@ def lesson_detail(request, lesson_id):
     # Convert markdown content to HTML
     lesson.content_html = markdown.markdown(lesson.content)
     return render(request, 'lesson_detail.html', {'lesson': lesson})
+
+
+@login_required
+def regenerate_lesson(request, lesson_id):
+    """Regenerate a lesson's content."""
+    lesson = get_object_or_404(Lesson, pk=lesson_id)
+    
+    # Create task for tracking
+    task = GenerationTask.objects.create(
+        user=request.user,
+        task_type='lesson',
+        topic=lesson.topic.name,
+        level=lesson.topic.level,
+        status='pending'
+    )
+    
+    # Start background regeneration
+    thread = threading.Thread(
+        target=regenerate_lesson_background,
+        args=(task.id, lesson.id)
+    )
+    thread.daemon = True
+    thread.start()
+    
+    return redirect('generation_status', task_id=task.id)
+
+
+def regenerate_lesson_background(task_id, lesson_id):
+    """Background function to regenerate lesson content."""
+    import django
+    django.db.connection.close()
+    
+    try:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'processing'
+        task.save()
+        
+        lesson = Lesson.objects.get(id=lesson_id)
+        coach = AICoach()
+        lesson_data = coach.generate_lesson(lesson.topic.name, lesson.topic.level)
+        
+        # Update existing lesson
+        lesson.title = lesson_data.get('title', lesson.title)
+        lesson.summary = lesson_data.get('summary', '')
+        lesson.content = lesson_data.get('full_content', '')
+        lesson.exercises = lesson_data.get('exercises', {})
+        lesson.quiz = lesson_data.get('quiz', {})
+        lesson.conversational_practice = lesson_data.get('conversational_practice', '')
+        lesson.save()
+        
+        task.status = 'completed'
+        task.result_id = lesson.id
+        task.completed_at = timezone.now()
+        task.save()
+        
+    except Exception as e:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'failed'
+        task.error_message = str(e)
+        task.save()
+
 
 @login_required
 def conversation_view(request):
@@ -237,21 +306,61 @@ def admin_generate_book(request):
         topic = request.POST.get('topic')
         level = request.POST.get('level')
         
+        # Create task for tracking
+        task = GenerationTask.objects.create(
+            user=request.user,
+            task_type='book',
+            topic=topic,
+            level=level,
+            status='pending'
+        )
+        
+        # Start background generation
+        thread = threading.Thread(
+            target=generate_book_outline_background,
+            args=(task.id, topic, level)
+        )
+        thread.daemon = True
+        thread.start()
+        
+        return redirect('generation_status', task_id=task.id)
+        
+    books = Book.objects.all().order_by('-created_at')
+    return render(request, 'admin_generate_book.html', {'books': books})
+
+
+def generate_book_outline_background(task_id, topic, level):
+    """Background function to generate book outline."""
+    import django
+    django.db.connection.close()
+    
+    try:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'processing'
+        task.save()
+        
         coach = AICoach()
-        # Step 1: Generate Outline
         book_data = coach.generate_book_outline(topic, level)
         
         book = Book.objects.create(
             title=book_data.get('title', 'Untitled Book'),
             description=book_data.get('description', ''),
             level=level,
-            content=book_data, # Contains chapters with summaries but no content yet
+            content=book_data,
             is_published=False
         )
-        return redirect('admin_book_preview', book_id=book.id)
         
-    books = Book.objects.all().order_by('-created_at')
-    return render(request, 'admin_generate_book.html', {'books': books})
+        task.status = 'completed'
+        task.result_id = book.id
+        task.completed_at = timezone.now()
+        task.save()
+        
+    except Exception as e:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'failed'
+        task.error_message = str(e)
+        task.save()
+
 
 @login_required
 def admin_book_preview(request, book_id):
@@ -260,30 +369,75 @@ def admin_book_preview(request, book_id):
     book = get_object_or_404(Book, pk=book_id)
     return render(request, 'admin_book_preview.html', {'book': book})
 
+
 @login_required
 def admin_generate_book_content(request, book_id):
     if not request.user.is_superuser:
         return redirect('home')
-        
+    
     book = get_object_or_404(Book, pk=book_id)
-    coach = AICoach()
     
-    # Reload content to ensure we're working with dict
-    book_content = book.content
-    chapters = book_content.get('chapters', [])
+    # Create task for tracking
+    task = GenerationTask.objects.create(
+        user=request.user,
+        task_type='chapter',
+        topic=book.title,
+        level=book.level,
+        status='pending'
+    )
     
-    updated_chapters = []
-    for chapter in chapters:
-        # Step 2: Generate Content for each chapter
-        content_data = coach.generate_chapter_content(chapter['title'], book.title, book.level)
-        chapter['content'] = content_data.get('content', '')
-        updated_chapters.append(chapter)
+    # Store book_id in result_id temporarily for reference
+    task.result_id = book_id
+    task.save()
     
-    book_content['chapters'] = updated_chapters
-    book.content = book_content
-    book.save()
+    # Start background generation
+    thread = threading.Thread(
+        target=generate_book_content_background,
+        args=(task.id, book_id)
+    )
+    thread.daemon = True
+    thread.start()
     
-    return redirect('book_detail', book_id=book.id)
+    return redirect('generation_status', task_id=task.id)
+
+
+def generate_book_content_background(task_id, book_id):
+    """Background function to generate all chapter content."""
+    import django
+    django.db.connection.close()
+    
+    try:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'processing'
+        task.save()
+        
+        book = Book.objects.get(id=book_id)
+        coach = AICoach()
+        
+        book_content = book.content
+        chapters = book_content.get('chapters', [])
+        
+        updated_chapters = []
+        for chapter in chapters:
+            content_data = coach.generate_chapter_content(chapter['title'], book.title, book.level)
+            chapter['content'] = content_data.get('content', '')
+            updated_chapters.append(chapter)
+        
+        book_content['chapters'] = updated_chapters
+        book.content = book_content
+        book.save()
+        
+        task.status = 'completed'
+        task.result_id = book_id
+        task.completed_at = timezone.now()
+        task.save()
+        
+    except Exception as e:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'failed'
+        task.error_message = str(e)
+        task.save()
+
 
 @login_required
 def admin_publish_book(request, book_id):
@@ -302,6 +456,65 @@ def admin_unpublish_book(request, book_id):
     book.is_published = False
     book.save()
     return redirect('admin_generate_book')
+
+
+@login_required
+def regenerate_book(request, book_id):
+    """Regenerate a book's outline."""
+    if not request.user.is_superuser:
+        return redirect('home')
+    
+    book = get_object_or_404(Book, pk=book_id)
+    
+    task = GenerationTask.objects.create(
+        user=request.user,
+        task_type='book',
+        topic=book.title,
+        level=book.level,
+        status='pending'
+    )
+    
+    thread = threading.Thread(
+        target=regenerate_book_background,
+        args=(task.id, book.id)
+    )
+    thread.daemon = True
+    thread.start()
+    
+    return redirect('generation_status', task_id=task.id)
+
+
+def regenerate_book_background(task_id, book_id):
+    """Background function to regenerate book outline."""
+    import django
+    django.db.connection.close()
+    
+    try:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'processing'
+        task.save()
+        
+        book = Book.objects.get(id=book_id)
+        coach = AICoach()
+        book_data = coach.generate_book_outline(book.title.split(':')[0], book.level)
+        
+        # Update existing book
+        book.title = book_data.get('title', book.title)
+        book.description = book_data.get('description', '')
+        book.content = book_data
+        book.save()
+        
+        task.status = 'completed'
+        task.result_id = book.id
+        task.completed_at = timezone.now()
+        task.save()
+        
+    except Exception as e:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'failed'
+        task.error_message = str(e)
+        task.save()
+
 
 @login_required
 def admin_delete_book(request, book_id):

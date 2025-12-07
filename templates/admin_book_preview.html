@@ -31,6 +31,10 @@
             <a href="{% url 'library' %}" class="inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
                 Cancel
             </a>
+            <a href="{% url 'regenerate_book' book.id %}" class="inline-flex items-center px-4 py-2 border border-slate-300 shadow-sm text-sm font-medium rounded-md text-slate-700 bg-white hover:bg-slate-50">
+                <span class="material-symbols-rounded mr-2">refresh</span>
+                Regenerate Outline
+            </a>
             <a href="{% url 'admin_generate_book_content' book.id %}" class="inline-flex items-center px-4 py-2 border border-transparent shadow-sm text-sm font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700">
                 <span class="material-symbols-rounded mr-2">auto_awesome</span>
                 Generate Full Content

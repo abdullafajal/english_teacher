@@ -22,4 +22,6 @@ urlpatterns = [
     path('api/update-time/', views.update_practice_time, name='update_practice_time'),
     path('generation/<int:task_id>/', views.generation_status, name='generation_status'),
     path('api/generation/<int:task_id>/', views.generation_status_api, name='generation_status_api'),
+    path('lesson/<int:lesson_id>/regenerate/', views.regenerate_lesson, name='regenerate_lesson'),
+    path('superuser/book/<int:book_id>/regenerate/', views.regenerate_book, name='regenerate_book'),
 ]
