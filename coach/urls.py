@@ -13,7 +13,6 @@ urlpatterns = [
     path('superuser/generate-book/', views.admin_generate_book, name='admin_generate_book'),
     path('superuser/book/<int:book_id>/preview/', views.admin_book_preview, name='admin_book_preview'),
     path('superuser/book/<int:book_id>/generate-content/', views.admin_generate_book_content, name='admin_generate_book_content'),
-    path('superuser/book/<int:book_id>/generate-content/', views.admin_generate_book_content, name='admin_generate_book_content'),
     path('superuser/book/<int:book_id>/publish/', views.admin_publish_book, name='admin_publish_book'),
     path('superuser/book/<int:book_id>/unpublish/', views.admin_unpublish_book, name='admin_unpublish_book'),
     path('superuser/book/<int:book_id>/delete/', views.admin_delete_book, name='admin_delete_book'),
@@ -24,4 +23,5 @@ urlpatterns = [
     path('api/generation/<int:task_id>/', views.generation_status_api, name='generation_status_api'),
     path('lesson/<int:lesson_id>/regenerate/', views.regenerate_lesson, name='regenerate_lesson'),
     path('superuser/book/<int:book_id>/regenerate/', views.regenerate_book, name='regenerate_book'),
+    path('superuser/chapter/<int:chapter_id>/regenerate/', views.regenerate_chapter, name='regenerate_chapter'),
 ]

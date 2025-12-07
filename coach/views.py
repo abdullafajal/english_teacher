@@ -433,30 +433,55 @@ def generate_book_outline_background(task_id, topic, level):
         )
         
         print(f"[Book Gen] Created book: {book.title}")
+        print(f"[Book Gen] Raw book_data: {book_data}")
         
         # Create Chapter objects from outline AND generate content
         chapters_data = book_data.get('chapters', [])
+        
+        # If no chapters returned, create at least one
+        if not chapters_data:
+            print(f"[Book Gen] WARNING: No chapters in outline, creating default chapter")
+            chapters_data = [{'title': 'Chapter 1: Introduction', 'summary': 'Introduction to the topic'}]
+        
+        print(f"[Book Gen] Found {len(chapters_data)} chapters to generate")
+        
         for i, chapter_data in enumerate(chapters_data):
             chapter_title = chapter_data.get('title', f'Chapter {i+1}')
+            chapter_summary = chapter_data.get('summary', '')
             print(f"[Book Gen] Generating chapter {i+1}/{len(chapters_data)}: {chapter_title}")
             
-            # Generate content for this chapter
-            try:
-                content_data = coach.generate_chapter_content(chapter_title, book.title, level)
-                chapter_content = content_data.get('content', '')
-            except Exception as ce:
-                print(f"[Book Gen] Error generating chapter {i+1}: {ce}")
-                chapter_content = f"Error generating content: {str(ce)}"
+            # Generate content with retry logic
+            chapter_content = ''
+            max_retries = 3
+            for attempt in range(max_retries):
+                try:
+                    content_data = coach.generate_chapter_content(chapter_title, book.title, level)
+                    chapter_content = content_data.get('content', '')
+                    if chapter_content:
+                        print(f"[Book Gen] Chapter {i+1} content generated (attempt {attempt+1})")
+                        break
+                    else:
+                        print(f"[Book Gen] Empty content on attempt {attempt+1}, retrying...")
+                except Exception as ce:
+                    print(f"[Book Gen] Attempt {attempt+1} failed: {ce}")
+                    if attempt < max_retries - 1:
+                        import time
+                        time.sleep(5)  # Wait before retry
+            
+            # Fallback if all retries failed
+            if not chapter_content:
+                print(f"[Book Gen] All retries failed for chapter {i+1}")
+                chapter_content = f"# {chapter_title}\n\nContent generation failed. Please regenerate this chapter."
             
             # Create chapter with content
-            Chapter.objects.create(
+            new_chapter = Chapter.objects.create(
                 book=book,
                 title=chapter_title,
-                summary=chapter_data.get('summary', ''),
+                summary=chapter_summary,
                 content=chapter_content,
                 order=i
             )
-            print(f"[Book Gen] Chapter {i+1} saved, content length: {len(chapter_content)}")
+            print(f"[Book Gen] Chapter {i+1} saved (id={new_chapter.id}), content length: {len(chapter_content)}")
         
         print(f"[Book Gen] Completed book '{book.title}' with {len(chapters_data)} chapters")
         
@@ -467,6 +492,7 @@ def generate_book_outline_background(task_id, topic, level):
         
     except Exception as e:
         print(f"[Book Gen] FAILED: {str(e)}")
+        import traceback
         traceback.print_exc()
         task = GenerationTask.objects.get(id=task_id)
         task.status = 'failed'
@@ -559,6 +585,31 @@ def generate_book_content_background(task_id, book_id):
         task.status = 'failed'
         task.error_message = str(e)
         task.save()
+
+
+@login_required
+@rate_limit(requests_per_minute=15)
+def regenerate_chapter(request, chapter_id):
+    """Regenerate content for a single chapter."""
+    if not request.user.is_superuser:
+        return redirect('home')
+    
+    chapter = get_object_or_404(Chapter, pk=chapter_id)
+    book = chapter.book
+    
+    try:
+        coach = AICoach()
+        content_data = coach.generate_chapter_content(chapter.title, book.title, book.level)
+        chapter.content = content_data.get('content', '')
+        chapter.save()
+        
+        from django.contrib import messages
+        messages.success(request, f'Chapter "{chapter.title}" regenerated successfully!')
+    except Exception as e:
+        from django.contrib import messages
+        messages.error(request, f'Error regenerating chapter: {str(e)}')
+    
+    return redirect('admin_book_preview', book_id=book.id)
 
 
 @login_required

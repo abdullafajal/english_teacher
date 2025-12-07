@@ -87,22 +87,49 @@ class AICoach:
 
     def generate_content(self, prompt):
         """Generates content based on a prompt, expecting JSON output. Uses quality model."""
+        response_text = ""
         try:
             print(f"[AI] Generating content, prompt length: {len(prompt)}")
             response = self.content_model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
             )
-            print(f"[AI] Got response, length: {len(response.text)}")
-            result = json.loads(response.text)
+            response_text = response.text
+            print(f"[AI] Got response, length: {len(response_text)}")
+            result = json.loads(response_text)
             print(f"[AI] Parsed JSON successfully")
             return result
         except json.JSONDecodeError as je:
             print(f"[AI] JSON parse error: {je}")
-            print(f"[AI] Raw response: {response.text[:500]}...")
+            print(f"[AI] Raw response: {response_text[:500]}...")
+            
+            # Try to extract content from malformed JSON
+            import re
+            
+            # Look for "content": "..." pattern
+            content_match = re.search(r'"content"\s*:\s*"(.*?)(?:"\s*}|$)', response_text, re.DOTALL)
+            if content_match:
+                extracted_content = content_match.group(1)
+                # Unescape common JSON escapes
+                extracted_content = extracted_content.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
+                print(f"[AI] Extracted content from malformed JSON, length: {len(extracted_content)}")
+                return {"content": extracted_content}
+            
+            # Look for markdown content directly (fallback)
+            if "# " in response_text:
+                # Find start of markdown content
+                start_idx = response_text.find('# ')
+                extracted = response_text[start_idx:].strip()
+                # Remove trailing JSON artifacts
+                if extracted.endswith('"}') or extracted.endswith('"'):
+                    extracted = extracted.rstrip('"}').strip()
+                print(f"[AI] Extracted markdown directly, length: {len(extracted)}")
+                return {"content": extracted}
+            
             return {
                 "title": "Error Parsing Response",
                 "description": f"JSON parse error: {str(je)}",
+                "content": response_text[:1000] if response_text else "",
                 "chapters": []
             }
         except Exception as e:
@@ -114,6 +141,7 @@ class AICoach:
                 "summary": "There was an error generating the content.",
                 "description": f"Error: {str(e)}",
                 "full_content": f"Error details: {str(e)}",
+                "content": "",
                 "exercises": [],
                 "quiz": [],
                 "chapters": [],
@@ -182,48 +210,53 @@ class AICoach:
 
     def generate_book_outline(self, topic, level):
         """Generate book outline. Uses quality model."""
+        print(f"[AI] Generating book outline for: {topic} ({level})")
         prompt = f"""
-        Generate a book outline for the topic '{topic}' at level '{level}'.
-        Return JSON structure:
+        Create an educational book outline for learning English.
+        Topic: {topic}
+        Level: {level}
+        
+        Return a JSON object with this exact structure:
         {{
-            "title": "Book Title",
-            "description": "Short description",
+            "title": "A descriptive book title about {topic}",
+            "description": "A 2-3 sentence description of what this book teaches",
             "chapters": [
-                {{"title": "Chapter 1: ...", "summary": "Brief summary of what this chapter covers"}}
+                {{"title": "Chapter 1: Introduction", "summary": "Overview of the topic"}},
+                {{"title": "Chapter 2: ...", "summary": "What this chapter covers"}}
             ]
         }}
-        Generate at least 8 chapters.
-        """
-        return self.generate_content(prompt)
-
-    def generate_chapter_content(self, chapter_title, topic, level):
-        """Generate chapter content. Uses quality model."""
-        prompt = f"""
-        Write the full content for the chapter '{chapter_title}' for a book on '{topic}' (Level: {level}).
-        The content should be detailed, educational, and formatted in Markdown.
         
-        IMPORTANT JSON RULES:
-        1. Return strictly valid JSON.
-        2. Escape all backslashes (e.g., use \\\\\\\\ instead of \\\\).
-        3. Escape all double quotes inside the content (e.g., use \\\\" instead of ").
-        4. Do not use unescaped control characters.
+        Create 5-8 chapters covering the topic progressively from basics to advanced.
+        """
+        result = self.generate_content(prompt)
+        print(f"[AI] Book outline result: title={result.get('title', 'NONE')}, chapters={len(result.get('chapters', []))}")
+        return result
 
-        CONTENT GUIDELINES:
-        - **Structure**: Start with a clear Introduction, then the Core Concept, then Examples, then Common Mistakes, and end with a Summary.
-        - **Rich Markdown**: 
-            - Use **Tables** to compare concepts.
-            - Use **Admonitions** for emphasis:
-                - `::: tip` for Pro Tips and best practices.
-                - `::: warning` for Common Mistakes to avoid.
-            - Use **Bold** for important vocabulary.
-            - Use **Lists** for examples.
-        - **Tone**: Professional, encouraging, and easy to understand.
-        - **Examples**: Provide at least 5 real-world examples for every concept.
-        - **Dialogue**: Include a short, natural dialogue demonstrating the concept in real life.
+    def generate_chapter_content(self, chapter_title, book_title, level):
+        """Generate chapter content. Uses quality model."""
+        print(f"[AI] Generating content for chapter: {chapter_title}")
+        prompt = f"""
+        Write educational content for this chapter in an English learning book.
+        
+        Book: {book_title}
+        Chapter: {chapter_title}
+        Level: {level}
+        
+        Write detailed, educational content in Markdown format.
+        
+        Include:
+        - Introduction to the topic
+        - Key concepts with clear explanations
+        - At least 3-5 practical examples
+        - Common mistakes to avoid
+        - Practice tips
+        - Summary
         
         Return JSON:
         {{
-            "content": "Markdown content..."
+            "content": "# {chapter_title}\\n\\nYour markdown content here..."
         }}
         """
-        return self.generate_content(prompt)
+        result = self.generate_content(prompt)
+        print(f"[AI] Chapter content length: {len(result.get('content', ''))}")
+        return result
