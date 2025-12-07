@@ -3,12 +3,55 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.utils import timezone
+from django.core.cache import cache
+from functools import wraps
 from .models import Topic, Lesson, Book, UserProgress, GenerationTask
 from .services import AICoach
 from django.contrib.auth.decorators import login_required
 import markdown
 import threading
 import json
+import time
+
+
+# Rate Limiter - 15 requests per minute per user (safety margin for 20 RPM limit)
+def rate_limit(requests_per_minute=15):
+    """Decorator to rate limit API endpoints per user."""
+    def decorator(view_func):
+        @wraps(view_func)
+        def wrapper(request, *args, **kwargs):
+            if not request.user.is_authenticated:
+                return JsonResponse({'error': 'Authentication required'}, status=401)
+            
+            # Create cache key for user
+            user_id = request.user.id
+            cache_key = f'rate_limit_{user_id}'
+            
+            # Get current request timestamps
+            now = time.time()
+            timestamps = cache.get(cache_key, [])
+            
+            # Remove timestamps older than 1 minute
+            cutoff = now - 60
+            timestamps = [t for t in timestamps if t > cutoff]
+            
+            # Check if over limit
+            if len(timestamps) >= requests_per_minute:
+                wait_time = int(60 - (now - timestamps[0]))
+                return JsonResponse({
+                    'error': f'Rate limit exceeded. Please wait {wait_time} seconds.',
+                    'rate_limited': True,
+                    'wait_seconds': wait_time
+                }, status=429)
+            
+            # Add current timestamp and save
+            timestamps.append(now)
+            cache.set(cache_key, timestamps, 120)  # Cache for 2 minutes
+            
+            return view_func(request, *args, **kwargs)
+        return wrapper
+    return decorator
+
 
 @login_required
 def home(request):
@@ -30,6 +73,7 @@ def my_lessons_view(request):
     return render(request, 'lesson_list.html', {'lessons': lessons})
 
 @login_required
+@rate_limit(requests_per_minute=15)
 def generate_lesson_view(request):
     if request.method == 'POST':
         topic_name = request.POST.get('topic')
@@ -168,6 +212,7 @@ def lesson_detail(request, lesson_id):
 
 
 @login_required
+@rate_limit(requests_per_minute=15)
 def regenerate_lesson(request, lesson_id):
     """Regenerate a lesson's content."""
     lesson = get_object_or_404(Lesson, pk=lesson_id)
@@ -298,6 +343,7 @@ def book_detail(request, book_id):
     return render(request, 'book_detail.html', {'book': book, 'chapters': chapters})
 
 @login_required
+@rate_limit(requests_per_minute=15)
 def admin_generate_book(request):
     if not request.user.is_superuser:
         return redirect('home')
@@ -371,6 +417,7 @@ def admin_book_preview(request, book_id):
 
 
 @login_required
+@rate_limit(requests_per_minute=15)
 def admin_generate_book_content(request, book_id):
     if not request.user.is_superuser:
         return redirect('home')
@@ -530,6 +577,7 @@ import json
 from .models import Conversation
 
 @login_required
+@rate_limit(requests_per_minute=15)
 def chat_api(request):
     if request.method == 'POST':
         data = json.loads(request.body)
@@ -595,6 +643,7 @@ def update_practice_time(request):
 import base64
 
 @login_required
+@rate_limit(requests_per_minute=15)
 def voice_chat_api(request):
     """Handle voice input using audio data."""
     if request.method == 'POST':
