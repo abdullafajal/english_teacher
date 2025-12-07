@@ -11,4 +11,5 @@ dependencies = [
     "google-generativeai>=0.8.5",
     "markdown>=3.10",
     "django-pwa>=2.0.1",
+    "django-dynamic-preferences>=1.17.0",
 ]

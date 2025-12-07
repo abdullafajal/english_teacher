@@ -35,21 +35,45 @@ Guidelines:
 """
 
 
+def get_ai_settings():
+    """Get AI settings from dynamic preferences, falling back to env vars."""
+    from dynamic_preferences.registries import global_preferences_registry
+    global_prefs = global_preferences_registry.manager()
+    
+    # Get API key - preference first, then env var
+    api_key = global_prefs.get('ai_settings__gemini_api_key', '')
+    if not api_key:
+        api_key = settings.GEMINI_API_KEY
+    
+    # Get models
+    voice_model = global_prefs.get('ai_settings__voice_model', '') or 'gemini-2.5-flash'
+    content_model = global_prefs.get('ai_settings__content_model', '') or 'gemini-2.5-flash'
+    
+    return {
+        'api_key': api_key,
+        'voice_model': voice_model,
+        'content_model': content_model,
+    }
+
+
 class AICoach:
     """AI Coach with separate models for voice (fast) and content (quality)."""
     
     def __init__(self):
-        genai.configure(api_key=settings.GEMINI_API_KEY)
+        # Load settings from dynamic preferences
+        ai_settings = get_ai_settings()
         
-        # Fastest model for voice conversations
+        genai.configure(api_key=ai_settings['api_key'])
+        
+        # Voice model for conversations
         self.voice_model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash",  # Fastest available
+            model_name=ai_settings['voice_model'],
             system_instruction=VOICE_PROMPT
         )
         
-        # Quality model for content generation
+        # Content model for generation
         self.content_model = genai.GenerativeModel(
-            model_name="gemini-2.5-flash",
+            model_name=ai_settings['content_model'],
             system_instruction=CONTENT_PROMPT
         )
 
