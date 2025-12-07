@@ -37,17 +37,25 @@ Guidelines:
 
 def get_ai_settings():
     """Get AI settings from dynamic preferences, falling back to env vars."""
-    from dynamic_preferences.registries import global_preferences_registry
-    global_prefs = global_preferences_registry.manager()
-    
-    # Get API key - preference first, then env var
-    api_key = global_prefs.get('ai_settings__gemini_api_key', '')
-    if not api_key:
+    try:
+        from dynamic_preferences.registries import global_preferences_registry
+        global_prefs = global_preferences_registry.manager()
+        
+        # Get API key - preference first, then env var
+        api_key = global_prefs.get('ai_settings__gemini_api_key', '')
+        if not api_key:
+            api_key = settings.GEMINI_API_KEY
+        
+        # Get models
+        voice_model = global_prefs.get('ai_settings__voice_model', '') or 'gemini-2.5-flash'
+        content_model = global_prefs.get('ai_settings__content_model', '') or 'gemini-2.5-flash'
+    except Exception as e:
+        print(f"[AI Settings] Could not load preferences: {e}, using defaults")
         api_key = settings.GEMINI_API_KEY
+        voice_model = 'gemini-2.5-flash'
+        content_model = 'gemini-2.5-flash'
     
-    # Get models
-    voice_model = global_prefs.get('ai_settings__voice_model', '') or 'gemini-2.5-flash'
-    content_model = global_prefs.get('ai_settings__content_model', '') or 'gemini-2.5-flash'
+    print(f"[AI Settings] Using voice_model={voice_model}, content_model={content_model}")
     
     return {
         'api_key': api_key,
@@ -80,19 +88,35 @@ class AICoach:
     def generate_content(self, prompt):
         """Generates content based on a prompt, expecting JSON output. Uses quality model."""
         try:
+            print(f"[AI] Generating content, prompt length: {len(prompt)}")
             response = self.content_model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
             )
-            return json.loads(response.text)
-        except Exception as e:
-            print(f"Error generating content: {e}")
+            print(f"[AI] Got response, length: {len(response.text)}")
+            result = json.loads(response.text)
+            print(f"[AI] Parsed JSON successfully")
+            return result
+        except json.JSONDecodeError as je:
+            print(f"[AI] JSON parse error: {je}")
+            print(f"[AI] Raw response: {response.text[:500]}...")
             return {
-                "title": "Error Generating Lesson",
-                "summary": "There was an error generating the content. Please check your API key and try again.",
+                "title": "Error Parsing Response",
+                "description": f"JSON parse error: {str(je)}",
+                "chapters": []
+            }
+        except Exception as e:
+            print(f"[AI] Error generating content: {e}")
+            import traceback
+            traceback.print_exc()
+            return {
+                "title": "Error Generating Content",
+                "summary": "There was an error generating the content.",
+                "description": f"Error: {str(e)}",
                 "full_content": f"Error details: {str(e)}",
                 "exercises": [],
                 "quiz": [],
+                "chapters": [],
                 "conversational_practice": [{"speaker": "System", "text": "Error generating practice."}]
             }
 

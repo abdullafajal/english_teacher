@@ -408,8 +408,9 @@ def admin_generate_book(request):
 
 
 def generate_book_outline_background(task_id, topic, level):
-    """Background function to generate book outline."""
+    """Background function to generate book with chapters and content."""
     import django
+    import traceback
     django.db.connection.close()
     
     try:
@@ -418,6 +419,8 @@ def generate_book_outline_background(task_id, topic, level):
         task.save()
         
         coach = AICoach()
+        
+        print(f"[Book Gen] Generating outline for: {topic}")
         book_data = coach.generate_book_outline(topic, level)
         
         # Create book
@@ -425,22 +428,37 @@ def generate_book_outline_background(task_id, topic, level):
             title=book_data.get('title', 'Untitled Book'),
             description=book_data.get('description', ''),
             level=level,
-            content=book_data,  # Keep JSON for backward compatibility
+            content={},  # Not using JSON anymore
             is_published=False
         )
         
-        # Create Chapter objects from outline
+        print(f"[Book Gen] Created book: {book.title}")
+        
+        # Create Chapter objects from outline AND generate content
         chapters_data = book_data.get('chapters', [])
         for i, chapter_data in enumerate(chapters_data):
+            chapter_title = chapter_data.get('title', f'Chapter {i+1}')
+            print(f"[Book Gen] Generating chapter {i+1}/{len(chapters_data)}: {chapter_title}")
+            
+            # Generate content for this chapter
+            try:
+                content_data = coach.generate_chapter_content(chapter_title, book.title, level)
+                chapter_content = content_data.get('content', '')
+            except Exception as ce:
+                print(f"[Book Gen] Error generating chapter {i+1}: {ce}")
+                chapter_content = f"Error generating content: {str(ce)}"
+            
+            # Create chapter with content
             Chapter.objects.create(
                 book=book,
-                title=chapter_data.get('title', f'Chapter {i+1}'),
+                title=chapter_title,
                 summary=chapter_data.get('summary', ''),
-                content='',  # Content generated separately
+                content=chapter_content,
                 order=i
             )
+            print(f"[Book Gen] Chapter {i+1} saved, content length: {len(chapter_content)}")
         
-        print(f"[Book Gen] Created book '{book.title}' with {len(chapters_data)} chapters")
+        print(f"[Book Gen] Completed book '{book.title}' with {len(chapters_data)} chapters")
         
         task.status = 'completed'
         task.result_id = book.id
@@ -449,6 +467,7 @@ def generate_book_outline_background(task_id, topic, level):
         
     except Exception as e:
         print(f"[Book Gen] FAILED: {str(e)}")
+        traceback.print_exc()
         task = GenerationTask.objects.get(id=task_id)
         task.status = 'failed'
         task.error_message = str(e)
