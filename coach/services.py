@@ -2,71 +2,67 @@ import google.generativeai as genai
 from django.conf import settings
 import json
 
-SYSTEM_PROMPT = """
-You are an AI English Speaking Coach designed to help users practice real conversations through voice.
-Your job is to speak naturally, guide the user, correct their grammar, and teach them step-by-step without sounding like a textbook.
+# Fast prompt for voice conversations
+VOICE_PROMPT = """
+You are an AI English Speaking Coach for voice conversations.
 
-🎯 Your Capabilities
-
-1. Voice Conversation
-   - Respond in VERY SHORT, natural sentences (1-2 sentences max).
-   - This is a voice call, so long answers are boring. Keep it snappy.
-   - Encourage continuous conversation.
-
-2. Grammar Correction
-   - ALWAYS check for grammar mistakes in every user message.
-   - If the user makes a mistake, correct it IMMEDIATELY.
-   - Show the correct sentence + a simple explanation.
-   - Keep it supportive, not judgmental.
-   - Example: "That was good! But instead of 'I go yesterday', say 'I went yesterday' because it's in the past."
-
-3. Conversation Flow
-   - Ask follow-up questions to keep the chat going.
-   - Keep the user engaged like a real tutor.
-   - If the user is stuck, suggest a topic or ask a simple question.
-
-4. Courses & Lessons
-   - You can generate:
-     * Grammar lessons
-     * Vocabulary lessons
-     * Practice exercises
-     * Examples with explanations
-     * Short quizzes
-   - Every lesson must be simple, structured, and easy to understand.
-
-5. Adapt to User Level
-   - Beginner: Use very simple sentences, basic vocabulary, and slow pacing.
-   - Intermediate: Mix simple and complex sentences, introduce idioms.
-   - Advanced: Use natural fluent English, complex grammar, and nuanced vocabulary.
-
-6. Tone
-   - Friendly, supportive, and motivating.
-   - Be patient and encouraging.
-
-IMPORTANT:
-- When generating JSON for lessons, strictly follow the requested JSON structure.
-- When chatting, output plain text suitable for speech synthesis (avoid markdown symbols like **bold** or *italics* if possible, as they aren't spoken).
+CRITICAL RULES:
+1. KEEP RESPONSES UNDER 2 SENTENCES - This is a voice call, be brief!
+2. Speak naturally like a friend, not a textbook
+3. If user makes grammar mistake, correct it quickly: "Great! Just say 'went' not 'go' for past tense."
+4. Ask ONE follow-up question to keep conversation going
+5. No markdown, no bullet points - plain spoken English only
+6. Be warm, encouraging, and patient
 """
 
+# Detailed prompt for content generation
+CONTENT_PROMPT = """
+You are an expert English language education content creator.
+
+Your role is to generate high-quality, structured educational content including:
+- Grammar lessons with clear explanations and examples
+- Vocabulary lessons with context and usage
+- Practice exercises and quizzes
+- Book chapters with comprehensive coverage
+
+Guidelines:
+- Use clear, professional language
+- Provide rich examples and explanations
+- Structure content logically
+- Include practical exercises
+- Make content engaging and easy to understand
+- Always follow the requested JSON structure exactly
+"""
+
+
 class AICoach:
+    """AI Coach with separate models for voice (fast) and content (quality)."""
+    
     def __init__(self):
         genai.configure(api_key=settings.GEMINI_API_KEY)
-        self.model = genai.GenerativeModel(
+        
+        # Fastest model for voice conversations
+        self.voice_model = genai.GenerativeModel(
+            model_name="gemini-2.5-flash",  # Fastest available
+            system_instruction=VOICE_PROMPT
+        )
+        
+        # Quality model for content generation
+        self.content_model = genai.GenerativeModel(
             model_name="gemini-2.5-flash",
-            system_instruction=SYSTEM_PROMPT
+            system_instruction=CONTENT_PROMPT
         )
 
     def generate_content(self, prompt):
-        """Generates content based on a prompt, expecting JSON output."""
+        """Generates content based on a prompt, expecting JSON output. Uses quality model."""
         try:
-            response = self.model.generate_content(
+            response = self.content_model.generate_content(
                 prompt,
                 generation_config={"response_mime_type": "application/json"}
             )
             return json.loads(response.text)
         except Exception as e:
             print(f"Error generating content: {e}")
-            # Return a fallback or empty structure to prevent crash
             return {
                 "title": "Error Generating Lesson",
                 "summary": "There was an error generating the content. Please check your API key and try again.",
@@ -77,35 +73,44 @@ class AICoach:
             }
 
     def chat(self, history, message):
-        """Conducts a conversation."""
+        """Conducts a text conversation. Uses fast model."""
         try:
-            chat_session = self.model.start_chat(history=history)
-            response = chat_session.send_message(message)
+            chat_session = self.voice_model.start_chat(history=history)
+            response = chat_session.send_message(
+                message,
+                generation_config={
+                    "max_output_tokens": 150,  # Limit response length for speed
+                    "temperature": 0.7,
+                }
+            )
             return response.text
         except Exception as e:
-            return f"I'm having trouble connecting right now. Please check your connection or API key. (Error: {str(e)})"
+            return f"Sorry, connection error. Try again."
 
     def chat_with_audio(self, history, audio_data, mime_type="audio/webm"):
-        """Conducts a conversation using audio input."""
+        """Conducts a conversation using audio input. Uses fast model."""
         try:
-            # Create audio part for Gemini
             audio_part = {
                 "inline_data": {
                     "mime_type": mime_type,
-                    "data": audio_data  # base64 encoded
+                    "data": audio_data
                 }
             }
             
-            chat_session = self.model.start_chat(history=history)
-            response = chat_session.send_message([
-                "The user sent a voice message. Listen to it and respond naturally as their English tutor. If you can't understand the audio, ask them to repeat.",
-                audio_part
-            ])
+            chat_session = self.voice_model.start_chat(history=history)
+            response = chat_session.send_message(
+                [audio_part],  # Just send audio, system prompt handles context
+                generation_config={
+                    "max_output_tokens": 150,  # Limit response length for speed
+                    "temperature": 0.7,
+                }
+            )
             return response.text
         except Exception as e:
             return f"I couldn't process your voice message. Please try again. (Error: {str(e)})"
 
     def generate_lesson(self, topic, level):
+        """Generate a complete lesson. Uses quality model."""
         prompt = f"""
         Generate a complete English lesson for the topic '{topic}' at level '{level}'.
         Return the response in JSON format with the following structure:
@@ -128,6 +133,7 @@ class AICoach:
         return self.generate_content(prompt)
 
     def generate_book_outline(self, topic, level):
+        """Generate book outline. Uses quality model."""
         prompt = f"""
         Generate a book outline for the topic '{topic}' at level '{level}'.
         Return JSON structure:
@@ -143,14 +149,15 @@ class AICoach:
         return self.generate_content(prompt)
 
     def generate_chapter_content(self, chapter_title, topic, level):
+        """Generate chapter content. Uses quality model."""
         prompt = f"""
         Write the full content for the chapter '{chapter_title}' for a book on '{topic}' (Level: {level}).
         The content should be detailed, educational, and formatted in Markdown.
         
         IMPORTANT JSON RULES:
         1. Return strictly valid JSON.
-        2. Escape all backslashes (e.g., use \\\\ instead of \\).
-        3. Escape all double quotes inside the content (e.g., use \\" instead of ").
+        2. Escape all backslashes (e.g., use \\\\\\\\ instead of \\\\).
+        3. Escape all double quotes inside the content (e.g., use \\\\" instead of ").
         4. Do not use unescaped control characters.
 
         CONTENT GUIDELINES:

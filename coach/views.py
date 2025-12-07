@@ -1,9 +1,14 @@
 from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.models import User
-from .models import Topic, Lesson, Book, UserProgress
+from django.http import JsonResponse
+from django.views.decorators.http import require_POST
+from django.utils import timezone
+from .models import Topic, Lesson, Book, UserProgress, GenerationTask
 from .services import AICoach
 from django.contrib.auth.decorators import login_required
 import markdown
+import threading
+import json
 
 @login_required
 def home(request):
@@ -29,12 +34,45 @@ def generate_lesson_view(request):
         topic_name = request.POST.get('topic')
         level = request.POST.get('level')
         
-        # Check if topic exists or create it
-        topic, created = Topic.objects.get_or_create(name=topic_name, level=level)
+        # Create a task to track generation
+        task = GenerationTask.objects.create(
+            user=request.user,
+            task_type='lesson',
+            topic=topic_name,
+            level=level,
+            status='pending'
+        )
+        
+        # Start background generation
+        thread = threading.Thread(
+            target=generate_lesson_background,
+            args=(task.id, topic_name, level)
+        )
+        thread.daemon = True
+        thread.start()
+        
+        # Redirect to loader page
+        return redirect('generation_status', task_id=task.id)
+    
+    return render(request, 'lesson_form.html')
+
+
+def generate_lesson_background(task_id, topic_name, level):
+    """Background function to generate lesson content."""
+    import django
+    django.db.connection.close()  # Close inherited connection
+    
+    try:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'processing'
+        task.save()
         
         # Generate content
         coach = AICoach()
         lesson_data = coach.generate_lesson(topic_name, level)
+        
+        # Get or create topic
+        topic, _ = Topic.objects.get_or_create(name=topic_name, level=level)
         
         # Save lesson
         lesson = Lesson.objects.create(
@@ -47,9 +85,47 @@ def generate_lesson_view(request):
             conversational_practice=lesson_data.get('conversational_practice', '')
         )
         
-        return redirect('lesson_detail', lesson_id=lesson.id)
+        # Update task as completed
+        task.status = 'completed'
+        task.result_id = lesson.id
+        task.completed_at = timezone.now()
+        task.save()
+        
+    except Exception as e:
+        task = GenerationTask.objects.get(id=task_id)
+        task.status = 'failed'
+        task.error_message = str(e)
+        task.save()
+
+
+@login_required
+def generation_status(request, task_id):
+    """Show loading page for background generation."""
+    task = get_object_or_404(GenerationTask, id=task_id, user=request.user)
+    return render(request, 'generation_loading.html', {'task': task})
+
+
+@login_required
+def generation_status_api(request, task_id):
+    """API to check generation status."""
+    task = get_object_or_404(GenerationTask, id=task_id, user=request.user)
     
-    return render(request, 'lesson_form.html')
+    data = {
+        'status': task.status,
+        'task_type': task.task_type,
+        'topic': task.topic,
+    }
+    
+    if task.status == 'completed':
+        if task.task_type == 'lesson':
+            data['redirect_url'] = f'/lesson/{task.result_id}/'
+        elif task.task_type == 'book':
+            data['redirect_url'] = f'/book/{task.result_id}/'
+    elif task.status == 'failed':
+        data['error'] = task.error_message
+    
+    return JsonResponse(data)
+
 
 @login_required
 def lesson_detail(request, lesson_id):

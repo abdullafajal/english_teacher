@@ -1,0 +1,133 @@
+{% extends "base.html" %}
+
+{% block title %}Generating Content{% endblock %}
+
+{% block content %}
+<div class="min-h-screen flex flex-col items-center justify-center px-4 -mt-16">
+    
+    <!-- Loader Container -->
+    <div class="text-center max-w-md">
+        
+        <!-- Animated Icon -->
+        <div class="relative mb-8">
+            <div class="w-24 h-24 mx-auto rounded-full bg-primaryContainer flex items-center justify-center">
+                <span id="loader-icon" class="material-symbols-rounded text-5xl text-primary animate-pulse">auto_awesome</span>
+            </div>
+            <!-- Spinning Ring -->
+            <div class="absolute inset-0 w-24 h-24 mx-auto border-4 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+        </div>
+
+        <!-- Status Text -->
+        <h1 class="text-2xl font-bold text-onSurface mb-2">
+            Generating <span class="text-primary capitalize">{{ task.task_type }}</span>
+        </h1>
+        <p class="text-onSurfaceVariant mb-4">{{ task.topic }} ({{ task.level }})</p>
+        
+        <!-- Progress Status -->
+        <div id="status-container" class="bg-surfaceVariant/30 rounded-2xl px-6 py-4 mb-6">
+            <div class="flex items-center justify-center gap-3">
+                <div id="status-spinner" class="w-5 h-5 border-2 border-primary/20 border-t-primary rounded-full animate-spin"></div>
+                <p id="status-text" class="text-onSurfaceVariant text-sm">
+                    {% if task.status == 'pending' %}
+                        Queued, starting soon...
+                    {% elif task.status == 'processing' %}
+                        AI is creating your content...
+                    {% elif task.status == 'completed' %}
+                        Done! Redirecting...
+                    {% else %}
+                        Something went wrong
+                    {% endif %}
+                </p>
+            </div>
+        </div>
+
+        <!-- Error Container (Hidden by default) -->
+        <div id="error-container" class="hidden bg-errorContainer/50 rounded-2xl px-6 py-4 mb-6">
+            <p class="text-error text-sm" id="error-text"></p>
+            <a href="{% url 'home' %}" class="inline-block mt-4 px-6 py-2 bg-primary text-onPrimary rounded-full text-sm font-medium hover:bg-primary/90 transition-colors">
+                Go Back Home
+            </a>
+        </div>
+
+        <!-- Fun Messages -->
+        <p id="fun-message" class="text-onSurfaceVariant/60 text-sm italic"></p>
+    </div>
+</div>
+
+<script>
+const taskId = {{ task.id }};
+const taskType = '{{ task.task_type }}';
+
+const funMessages = [
+    "Teaching AI to write good English...",
+    "Crafting examples just for you...",
+    "Building exercises from scratch...",
+    "Making learning fun...",
+    "Adding real-world examples...",
+    "Polishing the content...",
+    "Almost there...",
+];
+
+let messageIndex = 0;
+const funMessageEl = document.getElementById('fun-message');
+const statusText = document.getElementById('status-text');
+const statusSpinner = document.getElementById('status-spinner');
+const errorContainer = document.getElementById('error-container');
+const errorText = document.getElementById('error-text');
+const statusContainer = document.getElementById('status-container');
+const loaderIcon = document.getElementById('loader-icon');
+
+// Rotate fun messages
+function rotateFunMessage() {
+    funMessageEl.textContent = funMessages[messageIndex];
+    messageIndex = (messageIndex + 1) % funMessages.length;
+}
+rotateFunMessage();
+setInterval(rotateFunMessage, 3000);
+
+// Poll for status
+function checkStatus() {
+    fetch(`/api/generation/${taskId}/`)
+        .then(res => res.json())
+        .then(data => {
+            if (data.status === 'completed') {
+                statusText.textContent = 'Done! Redirecting...';
+                statusSpinner.classList.add('hidden');
+                loaderIcon.textContent = 'check_circle';
+                loaderIcon.classList.remove('animate-pulse');
+                loaderIcon.classList.add('text-green-500');
+                
+                // Redirect after short delay
+                setTimeout(() => {
+                    window.location.href = data.redirect_url;
+                }, 1000);
+                
+            } else if (data.status === 'failed') {
+                statusContainer.classList.add('hidden');
+                errorContainer.classList.remove('hidden');
+                errorText.textContent = data.error || 'Generation failed. Please try again.';
+                loaderIcon.textContent = 'error';
+                loaderIcon.classList.remove('animate-pulse');
+                loaderIcon.classList.add('text-error');
+                
+            } else if (data.status === 'processing') {
+                statusText.textContent = 'AI is creating your content...';
+                // Continue polling
+                setTimeout(checkStatus, 2000);
+                
+            } else {
+                // Still pending
+                statusText.textContent = 'Starting generation...';
+                setTimeout(checkStatus, 1500);
+            }
+        })
+        .catch(err => {
+            console.error('Status check failed:', err);
+            setTimeout(checkStatus, 3000);
+        });
+}
+
+// Start polling
+setTimeout(checkStatus, 1500);
+</script>
+{% endblock %}

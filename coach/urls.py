@@ -20,4 +20,6 @@ urlpatterns = [
     path('chat-api/', views.chat_api, name='chat_api'),
     path('voice-chat-api/', views.voice_chat_api, name='voice_chat_api'),
     path('api/update-time/', views.update_practice_time, name='update_practice_time'),
+    path('generation/<int:task_id>/', views.generation_status, name='generation_status'),
+    path('api/generation/<int:task_id>/', views.generation_status_api, name='generation_status_api'),
 ]

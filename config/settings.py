@@ -25,28 +25,61 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Take environment variables from .env file
 environ.Env.read_env(os.path.join(BASE_DIR, '.env'))
 
-# PWA Configuration
-PWA_APP_NAME = 'AI English Coach'
+
+# PWA Settings
+PWA_APP_NAME = "AI English Coach"
 PWA_APP_DESCRIPTION = "Your personal AI English tutor for conversation practice."
-PWA_THEME_COLOR = '#006A6A'  # Primary color from theme
-PWA_BACKGROUND_COLOR = '#ffffff'
-PWA_DISPLAY = 'standalone'
-PWA_SCOPE = '/'
-PWA_START_URL = '/'
+PWA_APP_THEME_COLOR = "#6750A4"
+PWA_APP_BACKGROUND_COLOR = "#FEF7FF"
+PWA_APP_DISPLAY = "standalone"
+PWA_APP_ORIENTATION = "portrait-primary"
+PWA_APP_START_URL = "/"
+PWA_APP_SCOPE = "/"
 PWA_APP_ICONS = [
     {
-        'src': '/static/images/icons/icon-192x192.png',
-        'sizes': '192x192'
+        "src": "/static/icons/icon-72x72.png",
+        "sizes": "72x72",
+        "type": "image/png",
     },
     {
-        'src': '/static/images/icons/icon-512x512.png',
-        'sizes': '512x512'
+        "src": "/static/icons/icon-96x96.png",
+        "sizes": "96x96",
+        "type": "image/png",
+    },
+    {
+        "src": "/static/icons/icon-144x144.png",
+        "sizes": "144x144",
+        "type": "image/png",
+    },
+    {
+        "src": "/static/icons/icon-192x192.png",
+        "sizes": "192x192",
+        "type": "image/png",
+    },
+    {
+        "src": "/static/icons/icon-512x512.png",
+        "sizes": "512x512",
+        "type": "image/png",
+    },
+]
+PWA_APP_ICONS_APPLE = [
+    {
+        "src": "/static/icons/icon-192-192.png",
+        "sizes": "192x192",
+        "type": "image/png",
     }
 ]
-PWA_APP_ICON_OPTIONS = {
-    'maskable': True
-}
-PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, 'static/js/sw.js')
+PWA_APP_SPLASH_SCREEN = [
+    {
+        "src": "static/icons/icon-512-512.png",
+        "media": "(device-width: 320px) and (device-height: 568px) and (-webkit-device-pixel-ratio: 2)",
+    }
+]
+PWA_APP_DIR = "ltr"
+PWA_APP_LANG = "en-US"
+PWA_APP_SHORT_NAME = "AI English Coach"
+PWA_SERVICE_WORKER_PATH = os.path.join(BASE_DIR, "static/js/sw.js")
+
 
 
 

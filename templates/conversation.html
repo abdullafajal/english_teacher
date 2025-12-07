@@ -1,129 +1,170 @@
 {% extends "base.html" %}
 
 {% block content %}
-<!-- Phone Call Full Screen - Matching Project Theme -->
+<!-- Phone Call Full Screen -->
 <div id="call-screen" class="fixed inset-0 z-50 bg-surface flex flex-col overflow-hidden">
     
-    <!-- Subtle Background Accent -->
+    <!-- Animated Background Gradient -->
     <div class="absolute inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute top-1/4 left-1/2 -translate-x-1/2 w-[600px] h-[600px] bg-primary/5 rounded-full blur-3xl animate-pulse"></div>
-        <div class="absolute bottom-0 left-0 w-[400px] h-[400px] bg-tertiary/5 rounded-full blur-3xl"></div>
+        <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[800px] bg-gradient-to-b from-primary/8 to-transparent rounded-full blur-3xl"></div>
+        <div class="absolute bottom-0 right-0 w-[500px] h-[500px] bg-gradient-to-t from-tertiary/5 to-transparent rounded-full blur-3xl"></div>
     </div>
 
-    <!-- Header: Status & Timer -->
-    <div class="relative z-10 pt-safe px-6 pt-12 text-center">
-        <p id="call-status" class="text-onSurfaceVariant text-sm font-medium tracking-wide uppercase">Not Connected</p>
-        <p id="call-timer" class="text-onSurfaceVariant/60 text-xs font-mono mt-1 hidden">00:00</p>
+    <!-- Top Bar -->
+    <div class="relative z-10 flex items-center justify-between px-4 pt-12 pb-4">
+        <!-- Back Button -->
+        <a href="{% url 'home' %}" class="p-3 rounded-full bg-surfaceContainerHigh/50 backdrop-blur-sm text-onSurfaceVariant hover:bg-surfaceContainerHigh transition-all active:scale-95">
+            <span class="material-symbols-rounded text-xl">arrow_back</span>
+        </a>
+        
+        <!-- Status & Timer Center -->
+        <div class="text-center flex-1">
+            <p id="call-status" class="text-onSurfaceVariant text-sm font-semibold tracking-wide">Tap to Start</p>
+            <p id="call-timer" class="text-primary text-xs font-mono mt-0.5 hidden">00:00</p>
+        </div>
+        
+        <!-- Settings Button -->
+        <button id="settings-btn" class="p-3 rounded-full bg-surfaceContainerHigh/50 backdrop-blur-sm text-onSurfaceVariant hover:bg-surfaceContainerHigh transition-all active:scale-95">
+            <span class="material-symbols-rounded text-xl">tune</span>
+        </button>
     </div>
 
-    <!-- Main Content: Avatar & Info -->
+    <!-- Main Content -->
     <div class="flex-1 flex flex-col items-center justify-center relative z-10 px-6">
         
-        <!-- Avatar with Sound Animation -->
-        <div class="relative mb-8">
-            <!-- Listening/Speaking Rings -->
-            <div id="ring-1" class="absolute inset-[-15px] rounded-full border-2 border-white/0 transition-all duration-500"></div>
-            <div id="ring-2" class="absolute inset-[-30px] rounded-full border border-white/0 transition-all duration-500"></div>
-            <div id="ring-3" class="absolute inset-[-45px] rounded-full border border-white/0 transition-all duration-500"></div>
+        <!-- Avatar Section -->
+        <div class="relative mb-6">
+            <!-- Animated Rings -->
+            <div id="ring-1" class="absolute inset-[-12px] rounded-full border-2 border-transparent transition-all duration-500"></div>
+            <div id="ring-2" class="absolute inset-[-24px] rounded-full border border-transparent transition-all duration-500"></div>
+            <div id="ring-3" class="absolute inset-[-36px] rounded-full border border-transparent transition-all duration-500"></div>
             
-            <!-- Main Avatar -->
-            <div id="avatar-container" class="relative h-32 w-32 rounded-full bg-gradient-to-br from-purple-500 to-indigo-600 shadow-2xl shadow-purple-500/30 flex items-center justify-center transition-transform duration-500">
+            <!-- Avatar -->
+            <div id="avatar-container" class="relative h-28 w-28 rounded-full bg-gradient-to-br from-primary to-tertiary shadow-xl shadow-primary/20 flex items-center justify-center transition-all duration-300">
                 <span id="avatar-icon" class="material-symbols-rounded text-5xl text-white">smart_toy</span>
+            </div>
+            
+            <!-- Online Indicator -->
+            <div id="online-dot" class="absolute bottom-1 right-1 h-5 w-5 rounded-full bg-surface flex items-center justify-center">
+                <div class="h-3.5 w-3.5 rounded-full bg-green-500 animate-pulse"></div>
             </div>
         </div>
 
-        <!-- Name & Subtitle -->
-        <h1 class="text-onSurface text-2xl font-bold tracking-tight">AI English Coach</h1>
-        <p id="subtitle" class="text-onSurfaceVariant text-sm mt-1">Your personal tutor</p>
+        <!-- Name & Info -->
+        <h1 class="text-onSurface text-xl font-bold">AI English Coach</h1>
+        <p id="subtitle" class="text-onSurfaceVariant/70 text-sm mt-0.5">Voice Tutor</p>
 
-        <!-- Live Captions -->
-        <div id="captions-area" class="mt-10 w-full max-w-md min-h-[120px] px-4">
-            <div id="user-caption" class="text-right mb-3 opacity-0 transition-opacity duration-300">
-                <span class="inline-block bg-surfaceVariant text-onSurfaceVariant px-4 py-2 rounded-2xl rounded-tr-sm text-sm"></span>
-            </div>
-            <div id="ai-caption" class="text-left opacity-0 transition-opacity duration-300">
-                <span class="inline-block bg-primaryContainer text-onPrimaryContainer px-4 py-2 rounded-2xl rounded-tl-sm text-sm"></span>
+        <!-- Live Caption Card -->
+        <div id="captions-area" class="mt-8 w-full max-w-sm">
+            <div id="caption-card" class="bg-surfaceContainerHigh/60 backdrop-blur-md rounded-2xl p-4 min-h-[100px] shadow-sm border border-outline/5">
+                <div id="ai-caption" class="opacity-0 transition-all duration-300">
+                    <p class="text-xs text-primary font-medium mb-1">AI Coach</p>
+                    <p class="text-onSurface text-sm leading-relaxed"></p>
+                </div>
+                <div id="listening-indicator" class="hidden flex items-center gap-2">
+                    <div class="flex gap-0.5">
+                        <span class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style="animation-delay: 0ms"></span>
+                        <span class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style="animation-delay: 150ms"></span>
+                        <span class="w-1.5 h-1.5 bg-primary rounded-full animate-bounce" style="animation-delay: 300ms"></span>
+                    </div>
+                    <span class="text-xs text-onSurfaceVariant">Listening...</span>
+                </div>
+                <div id="processing-indicator" class="hidden flex items-center gap-2">
+                    <div class="w-4 h-4 border-2 border-primary/30 border-t-primary rounded-full animate-spin"></div>
+                    <span class="text-xs text-onSurfaceVariant">Processing...</span>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Bottom Controls -->
-    <div class="relative z-10 pb-12 pt-6 px-8">
+    <div class="relative z-10 pb-10 pt-4 px-6">
         
-        <!-- Pre-Call: Start Button -->
-        <div id="pre-call-controls" class="flex justify-center">
-            <button id="start-call-btn" class="h-20 w-20 rounded-full bg-primary hover:bg-primary/90 text-onPrimary shadow-lg shadow-primary/30 flex items-center justify-center transition-all duration-300 active:scale-95 hover:scale-105">
+        <!-- Pre-Call -->
+        <div id="pre-call-controls" class="flex flex-col items-center gap-3">
+            <button id="start-call-btn" class="h-18 w-18 rounded-full bg-primary text-onPrimary shadow-lg shadow-primary/30 flex items-center justify-center transition-all duration-300 active:scale-95 hover:scale-105 hover:shadow-xl hover:shadow-primary/40">
                 <span class="material-symbols-rounded text-4xl">call</span>
             </button>
+            <p class="text-onSurfaceVariant/60 text-xs">Tap to start conversation</p>
         </div>
 
         <!-- In-Call Controls -->
         <div id="in-call-controls" class="hidden">
-            <div class="flex items-center justify-center gap-6">
+            <!-- Voice Activity Bars -->
+            <div class="flex justify-center mb-4 gap-1 h-8 items-end">
+                <div id="bar-1" class="w-1.5 bg-primary/40 rounded-full transition-all duration-75" style="height: 8px"></div>
+                <div id="bar-2" class="w-1.5 bg-primary/40 rounded-full transition-all duration-75" style="height: 8px"></div>
+                <div id="bar-3" class="w-1.5 bg-primary/40 rounded-full transition-all duration-75" style="height: 8px"></div>
+                <div id="bar-4" class="w-1.5 bg-primary/40 rounded-full transition-all duration-75" style="height: 8px"></div>
+                <div id="bar-5" class="w-1.5 bg-primary/40 rounded-full transition-all duration-75" style="height: 8px"></div>
+                <div id="bar-6" class="w-1.5 bg-primary/40 rounded-full transition-all duration-75" style="height: 8px"></div>
+                <div id="bar-7" class="w-1.5 bg-primary/40 rounded-full transition-all duration-75" style="height: 8px"></div>
+            </div>
+            
+            <!-- Control Buttons -->
+            <div class="flex items-center justify-center gap-5">
                 <!-- Mute -->
-                <button id="mute-btn" class="h-14 w-14 rounded-full bg-surfaceVariant text-onSurfaceVariant flex items-center justify-center transition-all duration-200 active:scale-95 hover:bg-surfaceVariant/80">
+                <button id="mute-btn" class="h-14 w-14 rounded-full bg-surfaceContainerHigh text-onSurfaceVariant flex items-center justify-center transition-all duration-200 active:scale-95 hover:bg-surfaceContainerHighest shadow-sm">
                     <span id="mute-icon" class="material-symbols-rounded text-2xl">mic</span>
                 </button>
 
                 <!-- End Call -->
-                <button id="end-call-btn" class="h-20 w-20 rounded-full bg-error hover:bg-error/90 text-onError shadow-lg shadow-error/30 flex items-center justify-center transition-all duration-300 active:scale-95">
-                    <span class="material-symbols-rounded text-4xl">call_end</span>
+                <button id="end-call-btn" class="h-16 w-16 rounded-full bg-error text-onError shadow-lg shadow-error/30 flex items-center justify-center transition-all duration-300 active:scale-95 hover:shadow-xl">
+                    <span class="material-symbols-rounded text-3xl">call_end</span>
                 </button>
 
                 <!-- Speaker -->
-                <button id="speaker-btn" class="h-14 w-14 rounded-full bg-surfaceVariant text-onSurfaceVariant flex items-center justify-center transition-all duration-200 active:scale-95 hover:bg-surfaceVariant/80">
+                <button id="speaker-btn" class="h-14 w-14 rounded-full bg-surfaceContainerHigh text-onSurfaceVariant flex items-center justify-center transition-all duration-200 active:scale-95 hover:bg-surfaceContainerHighest shadow-sm">
                     <span id="speaker-icon" class="material-symbols-rounded text-2xl">volume_up</span>
                 </button>
             </div>
-
-            <!-- Voice Activity Indicator -->
-            <div class="flex justify-center mt-6 gap-1">
-                <div id="bar-1" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
-                <div id="bar-2" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
-                <div id="bar-3" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
-                <div id="bar-4" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
-                <div id="bar-5" class="w-1 h-3 bg-outline/30 rounded-full transition-all duration-100"></div>
-            </div>
-            <p id="voice-hint" class="text-center text-onSurfaceVariant/60 text-xs mt-2">Speak now...</p>
         </div>
     </div>
-
-    <!-- Settings Button -->
-    <button id="settings-btn" class="absolute top-12 right-6 z-20 p-2 rounded-full bg-surfaceVariant/50 text-onSurfaceVariant hover:bg-surfaceVariant transition-colors">
-        <span class="material-symbols-rounded text-xl">settings</span>
-    </button>
-
-    <!-- Back Button -->
-    <a href="{% url 'home' %}" class="absolute top-12 left-6 z-20 p-2 rounded-full bg-surfaceVariant/50 text-onSurfaceVariant hover:bg-surfaceVariant transition-colors">
-        <span class="material-symbols-rounded text-xl">arrow_back</span>
-    </a>
 </div>
 
 <!-- Settings Modal -->
 <div id="settings-modal" class="fixed inset-0 z-[60] hidden">
-    <div class="absolute inset-0 bg-black/60 backdrop-blur-sm" id="modal-backdrop"></div>
-    <div class="fixed inset-0 z-10 flex items-center justify-center p-4">
-        <div class="relative rounded-3xl bg-[#1e1e2e] border border-white/10 shadow-2xl w-full max-w-sm">
-            <div class="px-6 py-6">
-                <h3 class="text-lg font-bold text-white mb-6">Voice Settings</h3>
-                <div class="space-y-5">
-                    <div>
-                        <label class="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Voice</label>
-                        <select id="voice-select" class="block w-full rounded-xl border-0 bg-white/10 py-3 pl-4 pr-10 text-white ring-1 ring-white/10 focus:ring-2 focus:ring-purple-500 text-sm"></select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Speed: <span id="rate-value" class="text-white">1.0</span>x</label>
-                        <input type="range" id="rate-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-bold text-purple-400 uppercase tracking-wider mb-2">Pitch: <span id="pitch-value" class="text-white">1.0</span></label>
-                        <input type="range" id="pitch-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-purple-500">
-                    </div>
+    <div class="absolute inset-0 bg-scrim/50 backdrop-blur-sm" id="modal-backdrop"></div>
+    <div class="fixed inset-x-4 bottom-0 z-10 sm:inset-auto sm:top-1/2 sm:left-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:max-w-sm sm:w-full">
+        <div class="rounded-t-3xl sm:rounded-3xl bg-surfaceContainerHigh shadow-2xl overflow-hidden">
+            <!-- Modal Header -->
+            <div class="px-6 py-4 border-b border-outline/10 flex items-center justify-between">
+                <h3 class="text-lg font-bold text-onSurface">Voice Settings</h3>
+                <button id="close-modal" class="p-2 rounded-full hover:bg-surfaceVariant transition-colors">
+                    <span class="material-symbols-rounded text-xl text-onSurfaceVariant">close</span>
+                </button>
+            </div>
+            
+            <!-- Modal Content -->
+            <div class="px-6 py-5 space-y-5 max-h-[60vh] overflow-y-auto">
+                <div>
+                    <label class="block text-xs font-semibold text-onSurfaceVariant uppercase tracking-wider mb-2">Voice</label>
+                    <select id="voice-select" class="block w-full rounded-xl border-0 bg-surfaceVariant py-3 pl-4 pr-10 text-onSurface ring-1 ring-outline/10 focus:ring-2 focus:ring-primary text-sm"></select>
+                </div>
+                <div>
+                    <label class="flex items-center justify-between text-xs font-semibold text-onSurfaceVariant uppercase tracking-wider mb-2">
+                        <span>Speed</span>
+                        <span id="rate-value" class="text-primary font-bold">1.0x</span>
+                    </label>
+                    <input type="range" id="rate-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-2 bg-surfaceVariant rounded-lg appearance-none cursor-pointer accent-primary">
+                </div>
+                <div>
+                    <label class="flex items-center justify-between text-xs font-semibold text-onSurfaceVariant uppercase tracking-wider mb-2">
+                        <span>Pitch</span>
+                        <span id="pitch-value" class="text-primary font-bold">1.0</span>
+                    </label>
+                    <input type="range" id="pitch-range" min="0.5" max="2" step="0.1" value="1" class="w-full h-2 bg-surfaceVariant rounded-lg appearance-none cursor-pointer accent-primary">
                 </div>
             </div>
-            <div class="px-6 py-4 flex gap-3 border-t border-white/10">
-                <button id="test-voice" class="flex-1 px-4 py-2.5 rounded-full bg-white/10 text-white text-sm font-bold hover:bg-white/20 transition-colors">Test Voice</button>
-                <button id="save-settings" class="flex-1 px-4 py-2.5 rounded-full bg-purple-500 text-white text-sm font-bold hover:bg-purple-400 transition-colors">Done</button>
+            
+            <!-- Modal Footer -->
+            <div class="px-6 py-4 flex gap-3 border-t border-outline/10 bg-surfaceContainerLow">
+                <button id="test-voice" class="flex-1 px-4 py-3 rounded-full bg-surfaceVariant text-onSurfaceVariant text-sm font-bold hover:bg-surfaceVariant/80 transition-colors">
+                    Test Voice
+                </button>
+                <button id="save-settings" class="flex-1 px-4 py-3 rounded-full bg-primary text-onPrimary text-sm font-bold hover:bg-primary/90 transition-colors">
+                    Done
+                </button>
             </div>
         </div>
     </div>
@@ -131,7 +172,7 @@
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    // ===== Elements =====
+    // Elements
     const $ = id => document.getElementById(id);
     
     const callStatus = $('call-status');
@@ -139,14 +180,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const subtitle = $('subtitle');
     const avatarContainer = $('avatar-container');
     const avatarIcon = $('avatar-icon');
+    const onlineDot = $('online-dot');
     const rings = [$('ring-1'), $('ring-2'), $('ring-3')];
-    const bars = [$('bar-1'), $('bar-2'), $('bar-3'), $('bar-4'), $('bar-5')];
-    const voiceHint = $('voice-hint');
+    const bars = [$('bar-1'), $('bar-2'), $('bar-3'), $('bar-4'), $('bar-5'), $('bar-6'), $('bar-7')];
     
-    const userCaption = $('user-caption').querySelector('span');
-    const aiCaption = $('ai-caption').querySelector('span');
-    const userCaptionWrap = $('user-caption');
-    const aiCaptionWrap = $('ai-caption');
+    const aiCaption = $('ai-caption');
+    const aiCaptionText = aiCaption?.querySelector('p:last-child');
+    const listeningIndicator = $('listening-indicator');
+    const processingIndicator = $('processing-indicator');
     
     const preCallControls = $('pre-call-controls');
     const inCallControls = $('in-call-controls');
@@ -157,7 +198,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const speakerBtn = $('speaker-btn');
     const speakerIcon = $('speaker-icon');
 
-    // ===== State =====
+    // State
     let state = 'idle';
     let conversationId = null;
     let mediaRecorder = null;
@@ -167,7 +208,6 @@ document.addEventListener('DOMContentLoaded', () => {
     let isSpeakerOn = true;
     let callStartTime = null;
     let timerInterval = null;
-    let silenceTimer = null;
     let analyserInterval = null;
     let audioContext = null;
     let analyser = null;
@@ -175,7 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const SILENCE_THRESHOLD = 2500;
 
-    // ===== Call Management =====
+    // Start Call
     async function startCall() {
         try {
             mediaStream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -197,24 +237,17 @@ document.addEventListener('DOMContentLoaded', () => {
             
         } catch (err) {
             console.error('Mic error:', err);
-            callStatus.textContent = 'Microphone access denied';
+            callStatus.textContent = 'Mic access denied';
         }
     }
 
     function endCall() {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
-            mediaRecorder.stop();
-        }
-        if (mediaStream) {
-            mediaStream.getTracks().forEach(t => t.stop());
-        }
-        if (audioContext) {
-            audioContext.close();
-        }
+        if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
+        if (mediaStream) mediaStream.getTracks().forEach(t => t.stop());
+        if (audioContext) audioContext.close();
         window.speechSynthesis.cancel();
         clearInterval(timerInterval);
         clearInterval(analyserInterval);
-        clearTimeout(silenceTimer);
         
         conversationId = null;
         callStartTime = null;
@@ -224,14 +257,15 @@ document.addEventListener('DOMContentLoaded', () => {
         callTimer.classList.add('hidden');
         preCallControls.classList.remove('hidden');
         inCallControls.classList.add('hidden');
-        userCaptionWrap.style.opacity = '0';
-        aiCaptionWrap.style.opacity = '0';
+        aiCaption.style.opacity = '0';
+        listeningIndicator.classList.add('hidden');
+        processingIndicator.classList.add('hidden');
         stopRings();
         resetBars();
         
         setTimeout(() => {
-            callStatus.textContent = 'Not Connected';
-            subtitle.textContent = 'Your personal tutor';
+            callStatus.textContent = 'Tap to Start';
+            subtitle.textContent = 'Voice Tutor';
         }, 2000);
     }
 
@@ -242,29 +276,30 @@ document.addEventListener('DOMContentLoaded', () => {
         callTimer.textContent = `${mins}:${secs}`;
     }
 
-    // ===== Voice Activity Detection & Recording =====
+    // Listening
     function startListening() {
         if (isMuted) {
             callStatus.textContent = 'Muted';
-            voiceHint.textContent = 'Unmute to speak';
             return;
         }
 
         state = 'listening';
         callStatus.textContent = 'Listening';
-        voiceHint.textContent = 'Speak now...';
         avatarIcon.textContent = 'hearing';
-        avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-primary to-secondary shadow-2xl shadow-primary/30 flex items-center justify-center transition-transform duration-500';
+        avatarContainer.className = 'relative h-28 w-28 rounded-full bg-gradient-to-br from-primary to-secondary shadow-xl shadow-primary/20 flex items-center justify-center transition-all duration-300 scale-105';
+        
+        listeningIndicator.classList.remove('hidden');
+        processingIndicator.classList.add('hidden');
+        aiCaption.style.opacity = '0';
         startRings('listening');
         
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus') 
-            ? 'audio/webm;codecs=opus' 
-            : 'audio/webm';
+            ? 'audio/webm;codecs=opus' : 'audio/webm';
         
         mediaRecorder = new MediaRecorder(mediaStream, { mimeType });
         audioChunks = [];
         
-        mediaRecorder.ondataavailable = (e) => {
+        mediaRecorder.ondataavailable = e => {
             if (e.data.size > 0) audioChunks.push(e.data);
         };
         
@@ -282,7 +317,6 @@ document.addEventListener('DOMContentLoaded', () => {
     function startVoiceMonitor() {
         let lastSoundTime = Date.now();
         let hasSpoken = false;
-        
         const dataArray = new Uint8Array(analyser.frequencyBinCount);
         
         analyserInterval = setInterval(() => {
@@ -294,7 +328,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (average > 30) {
                 lastSoundTime = Date.now();
                 hasSpoken = true;
-                clearTimeout(silenceTimer);
             } else if (hasSpoken && Date.now() - lastSoundTime > SILENCE_THRESHOLD) {
                 clearInterval(analyserInterval);
                 stopRecording();
@@ -303,29 +336,29 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function stopRecording() {
-        if (mediaRecorder && mediaRecorder.state === 'recording') {
+        if (mediaRecorder?.state === 'recording') {
             mediaRecorder.stop();
             setState('processing');
         }
     }
 
     function updateBars(level) {
-        const normalizedLevel = Math.min(level / 50, 1);
+        const normalized = Math.min(level / 50, 1);
         bars.forEach((bar, i) => {
-            const height = 3 + Math.random() * normalizedLevel * 20;
+            const height = 8 + Math.random() * normalized * 24;
             bar.style.height = `${height}px`;
-            bar.style.backgroundColor = normalizedLevel > 0.3 ? 'var(--md-sys-color-primary)' : 'var(--md-sys-color-outline)';
+            bar.style.opacity = normalized > 0.2 ? '1' : '0.4';
         });
     }
 
     function resetBars() {
         bars.forEach(bar => {
-            bar.style.height = '12px';
-            bar.style.backgroundColor = 'var(--md-sys-color-outline)';
+            bar.style.height = '8px';
+            bar.style.opacity = '0.4';
         });
     }
 
-    // ===== API =====
+    // API
     async function sendAudio(blob, mimeType) {
         setState('processing');
         
@@ -350,8 +383,11 @@ document.addEventListener('DOMContentLoaded', () => {
             
             if (data.conversation_id) conversationId = data.conversation_id;
             
-            aiCaption.textContent = data.response;
-            aiCaptionWrap.style.opacity = '1';
+            // Show response
+            if (aiCaptionText) aiCaptionText.textContent = data.response;
+            aiCaption.style.opacity = '1';
+            listeningIndicator.classList.add('hidden');
+            processingIndicator.classList.add('hidden');
             
             speak(data.response);
             
@@ -371,7 +407,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== Text-to-Speech =====
+    // TTS
     function speak(text) {
         if (!window.speechSynthesis || !isSpeakerOn || !text) {
             setTimeout(() => startListening(), 500);
@@ -380,67 +416,61 @@ document.addEventListener('DOMContentLoaded', () => {
         
         setState('speaking');
         
-        // Simple approach - no workarounds
         const msg = new SpeechSynthesisUtterance();
         msg.text = text;
         msg.rate = parseFloat(localStorage.getItem('speechRate')) || 1.0;
         msg.pitch = parseFloat(localStorage.getItem('speechPitch')) || 1.0;
         msg.volume = 1.0;
         
-        // Set voice if saved
         const voiceURI = localStorage.getItem('voiceURI');
         if (voiceURI && voices.length > 0) {
             const voice = voices.find(v => v.voiceURI === voiceURI);
             if (voice) msg.voice = voice;
         }
         
-        msg.onend = function() {
-            startListening();
-        };
+        msg.onend = () => startListening();
+        msg.onerror = () => startListening();
         
-        msg.onerror = function(e) {
-            console.log('Speech error:', e);
-            startListening();
-        };
-        
-        // Speak directly
         speechSynthesis.cancel();
         speechSynthesis.speak(msg);
     }
 
-    // ===== State Management =====
+    // State
     function setState(newState) {
         state = newState;
         
         switch (newState) {
             case 'listening':
                 callStatus.textContent = 'Listening';
-                voiceHint.textContent = 'Speak now...';
                 avatarIcon.textContent = 'hearing';
-                avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-primary to-secondary shadow-2xl shadow-primary/30 flex items-center justify-center transition-transform duration-500';
+                avatarContainer.className = 'relative h-28 w-28 rounded-full bg-gradient-to-br from-primary to-secondary shadow-xl shadow-primary/20 flex items-center justify-center transition-all duration-300 scale-105';
+                listeningIndicator.classList.remove('hidden');
+                processingIndicator.classList.add('hidden');
                 startRings('listening');
                 break;
                 
             case 'processing':
                 callStatus.textContent = 'Processing';
-                voiceHint.textContent = 'Understanding...';
                 avatarIcon.textContent = 'psychology';
-                avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-tertiary to-secondary shadow-2xl shadow-tertiary/30 flex items-center justify-center transition-transform duration-500 animate-pulse';
+                avatarContainer.className = 'relative h-28 w-28 rounded-full bg-gradient-to-br from-tertiary to-secondary shadow-xl shadow-tertiary/20 flex items-center justify-center transition-all duration-300 animate-pulse';
+                listeningIndicator.classList.add('hidden');
+                processingIndicator.classList.remove('hidden');
                 stopRings();
                 resetBars();
                 break;
                 
             case 'speaking':
-                callStatus.textContent = 'AI Speaking';
-                voiceHint.textContent = 'Listening...';
+                callStatus.textContent = 'Speaking';
                 avatarIcon.textContent = 'record_voice_over';
-                avatarContainer.className = 'relative h-32 w-32 rounded-full bg-gradient-to-br from-primary to-tertiary shadow-2xl shadow-primary/30 flex items-center justify-center transition-transform duration-500';
+                avatarContainer.className = 'relative h-28 w-28 rounded-full bg-gradient-to-br from-primary to-tertiary shadow-xl shadow-primary/20 flex items-center justify-center transition-all duration-300';
+                listeningIndicator.classList.add('hidden');
+                processingIndicator.classList.add('hidden');
                 startRings('speaking');
                 break;
         }
     }
 
-    // ===== Visual Effects =====
+    // Rings Animation
     let ringInterval = null;
     
     function startRings(type) {
@@ -451,11 +481,11 @@ document.addEventListener('DOMContentLoaded', () => {
         ringInterval = setInterval(() => {
             scale = (scale + 1) % 3;
             rings.forEach((ring, i) => {
-                const s = 1 + ((scale + i) % 3) * 0.15;
-                const o = 1 - ((scale + i) % 3) * 0.3;
+                const s = 1 + ((scale + i) % 3) * 0.12;
+                const o = 0.5 - ((scale + i) % 3) * 0.15;
                 ring.style.transform = `scale(${s})`;
                 ring.style.borderColor = color;
-                ring.style.opacity = o;
+                ring.style.opacity = Math.max(0, o);
             });
         }, 400);
     }
@@ -468,19 +498,17 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // ===== Controls =====
+    // Controls
     function toggleMute() {
         isMuted = !isMuted;
         muteIcon.textContent = isMuted ? 'mic_off' : 'mic';
-        muteBtn.classList.toggle('bg-red-500/50', isMuted);
+        muteBtn.classList.toggle('bg-error/20', isMuted);
+        muteBtn.classList.toggle('text-error', isMuted);
         
         if (isMuted && state === 'listening') {
-            if (mediaRecorder && mediaRecorder.state === 'recording') {
-                mediaRecorder.stop();
-            }
+            if (mediaRecorder?.state === 'recording') mediaRecorder.stop();
             clearInterval(analyserInterval);
             callStatus.textContent = 'Muted';
-            voiceHint.textContent = 'Unmute to speak';
             stopRings();
             resetBars();
         } else if (!isMuted && state !== 'speaking') {
@@ -491,16 +519,16 @@ document.addEventListener('DOMContentLoaded', () => {
     function toggleSpeaker() {
         isSpeakerOn = !isSpeakerOn;
         speakerIcon.textContent = isSpeakerOn ? 'volume_up' : 'volume_off';
-        speakerBtn.classList.toggle('bg-white/30', !isSpeakerOn);
+        speakerBtn.classList.toggle('bg-surfaceVariant', !isSpeakerOn);
     }
 
-    // ===== Event Listeners =====
+    // Events
     startCallBtn.addEventListener('click', startCall);
     endCallBtn.addEventListener('click', endCall);
     muteBtn.addEventListener('click', toggleMute);
     speakerBtn.addEventListener('click', toggleSpeaker);
 
-    // ===== Settings =====
+    // Settings
     function loadVoices() {
         voices = window.speechSynthesis.getVoices();
         const voiceSelect = $('voice-select');
@@ -521,24 +549,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     $('rate-range').value = localStorage.getItem('speechRate') || 1.0;
     $('pitch-range').value = localStorage.getItem('speechPitch') || 1.0;
-    $('rate-value').textContent = $('rate-range').value;
+    $('rate-value').textContent = $('rate-range').value + 'x';
     $('pitch-value').textContent = $('pitch-range').value;
 
     $('settings-btn').addEventListener('click', () => $('settings-modal').classList.remove('hidden'));
     $('save-settings').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
+    $('close-modal')?.addEventListener('click', () => $('settings-modal').classList.add('hidden'));
     $('modal-backdrop').addEventListener('click', () => $('settings-modal').classList.add('hidden'));
 
-    $('rate-range').addEventListener('input', (e) => {
+    $('rate-range').addEventListener('input', e => {
         localStorage.setItem('speechRate', e.target.value);
-        $('rate-value').textContent = e.target.value;
+        $('rate-value').textContent = e.target.value + 'x';
     });
 
-    $('pitch-range').addEventListener('input', (e) => {
+    $('pitch-range').addEventListener('input', e => {
         localStorage.setItem('speechPitch', e.target.value);
         $('pitch-value').textContent = e.target.value;
     });
 
-    $('voice-select').addEventListener('change', (e) => {
+    $('voice-select').addEventListener('change', e => {
         localStorage.setItem('voiceURI', e.target.value);
     });
 
@@ -554,6 +583,7 @@ document.addEventListener('DOMContentLoaded', () => {
 </script>
 
 <style>
-    .pt-safe { padding-top: env(safe-area-inset-top); }
+    .h-18 { height: 4.5rem; }
+    .w-18 { width: 4.5rem; }
 </style>
 {% endblock %}

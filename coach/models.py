@@ -61,3 +61,32 @@ class Book(models.Model):
 
     def __str__(self):
         return self.title
+
+
+class GenerationTask(models.Model):
+    """Track background content generation tasks."""
+    STATUS_CHOICES = [
+        ('pending', 'Pending'),
+        ('processing', 'Processing'),
+        ('completed', 'Completed'),
+        ('failed', 'Failed'),
+    ]
+    TYPE_CHOICES = [
+        ('lesson', 'Lesson'),
+        ('book', 'Book'),
+        ('chapter', 'Chapter'),
+    ]
+    
+    user = models.ForeignKey(User, on_delete=models.CASCADE)
+    task_type = models.CharField(max_length=20, choices=TYPE_CHOICES)
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='pending')
+    topic = models.CharField(max_length=200)
+    level = models.CharField(max_length=2)
+    result_id = models.IntegerField(null=True, blank=True)  # ID of created lesson/book
+    error_message = models.TextField(blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+    completed_at = models.DateTimeField(null=True, blank=True)
+    
+    def __str__(self):
+        return f"{self.task_type} - {self.topic} ({self.status})"
+
