@@ -168,7 +168,15 @@ AUTHENTICATION_BACKENDS = [
 SITE_ID = 1
 LOGIN_REDIRECT_URL = '/'
 LOGOUT_REDIRECT_URL = '/'
+
+# Allauth settings
 ACCOUNT_EMAIL_VERIFICATION = 'none'
+ACCOUNT_SESSION_REMEMBER = True  # Always remember login
+ACCOUNT_LOGOUT_ON_PASSWORD_CHANGE = False  # Don't logout on password change
+ACCOUNT_LOGIN_ON_PASSWORD_RESET = True  # Auto login after password reset
+
+# Remember me - keep users logged in
+REMEMBER_ME_DURATION = 60 * 60 * 24 * 365  # 1 year
 
 WSGI_APPLICATION = "config.wsgi.application"
 
