@@ -158,4 +158,123 @@
         </div>
     </div>
 </div>
+
+<style>
+    /* Enhanced Table Styles */
+    .prose table {
+        width: 100%;
+        border-collapse: collapse;
+        margin: 1.5rem 0;
+        background: var(--md-sys-color-surface-container-low);
+        border-radius: 12px;
+        overflow: hidden;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    
+    .prose thead {
+        background: var(--md-sys-color-primary-container);
+    }
+    
+    .prose th {
+        padding: 1rem;
+        text-align: left;
+        font-weight: 600;
+        color: var(--md-sys-color-on-primary-container);
+        border-bottom: 2px solid var(--md-sys-color-outline);
+        font-size: 0.875rem;
+        text-transform: uppercase;
+        letter-spacing: 0.025em;
+    }
+    
+    .prose td {
+        padding: 0.875rem 1rem;
+        border-bottom: 1px solid var(--md-sys-color-outline-variant);
+        color: var(--md-sys-color-on-surface);
+    }
+    
+    .prose tbody tr:last-child td {
+        border-bottom: none;
+    }
+    
+    .prose tbody tr:nth-child(even) {
+        background: var(--md-sys-color-surface-container);
+    }
+    
+    .prose tbody tr:hover {
+        background: var(--md-sys-color-surface-container-high);
+    }
+
+    /* Headings */
+    .prose h1 {
+        font-size: 2rem;
+        font-weight: 700;
+        color: var(--md-sys-color-on-surface);
+        margin-top: 2rem;
+        margin-bottom: 1rem;
+        line-height: 1.2;
+    }
+    
+    .prose h2 {
+        font-size: 1.5rem;
+        font-weight: 700;
+        color: var(--md-sys-color-primary);
+        margin-top: 2.5rem;
+        margin-bottom: 1rem;
+        padding-top: 1.5rem;
+        padding-bottom: 0.5rem;
+        border-top: 1px solid var(--md-sys-color-outline-variant);
+        border-bottom: 2px solid var(--md-sys-color-primary);
+    }
+    
+    .prose h2:first-child {
+        margin-top: 0;
+        padding-top: 0;
+        border-top: none;
+    }
+    
+    .prose h3 {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: var(--md-sys-color-secondary);
+        margin-top: 2rem;
+        margin-bottom: 0.75rem;
+    }
+    
+    .prose h4 {
+        font-size: 1.1rem;
+        font-weight: 600;
+        color: var(--md-sys-color-tertiary);
+        margin-top: 1.5rem;
+        margin-bottom: 0.5rem;
+    }
+
+    /* Blockquotes for notes */
+    .prose blockquote {
+        background: var(--md-sys-color-tertiary-container);
+        border-left: 4px solid var(--md-sys-color-tertiary);
+        padding: 1rem 1.5rem;
+        margin: 1.5rem 0;
+        border-radius: 0 8px 8px 0;
+        color: var(--md-sys-color-on-tertiary-container);
+    }
+    
+    .prose blockquote p {
+        margin: 0;
+        color: inherit;
+    }
+
+    /* Code blocks */
+    .prose code {
+        background: var(--md-sys-color-surface-container-high);
+        padding: 0.2rem 0.5rem;
+        border-radius: 4px;
+        font-size: 0.9em;
+    }
+
+    /* Bold text for important vocabulary */
+    .prose strong {
+        color: var(--md-sys-color-primary);
+        font-weight: 600;
+    }
+</style>
 {% endblock %}

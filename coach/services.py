@@ -85,6 +85,31 @@ class AICoach:
             system_instruction=CONTENT_PROMPT
         )
 
+    def _fix_table_formatting(self, content):
+        """Fix markdown tables that are on single lines."""
+        import re
+        
+        # Pattern: | Header | Header | | :--- | :--- | | data | data |
+        # Need to add newlines between: header row, separator row, data rows
+        
+        # Step 1: Add newline before separator row (| :--- or |:---)
+        content = re.sub(r'\|\s*\|\s*:?-', '|\n| -', content)
+        content = re.sub(r'\|\s*\|(:---)', r'|\n|\1', content)
+        
+        # Step 2: Add newline after separator row (---| |)
+        content = re.sub(r'(-{3,}\s*\|)\s*\|\s*(?=[A-Za-z0-9])', r'\1\n| ', content)
+        
+        # Step 3: Add newline between data rows (| data | | next |)
+        content = re.sub(r'\|\s*\|\s*(?=[A-Za-z0-9])', '|\n| ', content)
+        
+        # Step 4: Clean up any double pipes at start of lines
+        content = re.sub(r'\n\|\s*\|', '\n|', content)
+        
+        # Step 5: Ensure blank line before table (for markdown parsing)
+        content = re.sub(r'([^\n])\n(\| [A-Za-z])', r'\1\n\n\2', content)
+        
+        return content
+
     def generate_content(self, prompt):
         """Generates content based on a prompt, expecting JSON output. Uses quality model."""
         response_text = ""
@@ -98,6 +123,11 @@ class AICoach:
             print(f"[AI] Got response, length: {len(response_text)}")
             result = json.loads(response_text)
             print(f"[AI] Parsed JSON successfully")
+            
+            # Fix any tables that are on single lines (replace | followed by | with newline)
+            if 'content' in result:
+                result['content'] = self._fix_table_formatting(result['content'])
+            
             return result
         except json.JSONDecodeError as je:
             print(f"[AI] JSON parse error: {je}")
@@ -110,27 +140,93 @@ class AICoach:
             content_match = re.search(r'"content"\s*:\s*"(.*?)(?:"\s*}|$)', response_text, re.DOTALL)
             if content_match:
                 extracted_content = content_match.group(1)
-                # Unescape common JSON escapes
-                extracted_content = extracted_content.replace('\\n', '\n').replace('\\"', '"').replace('\\\\', '\\')
+                # Unescape common JSON escapes - handle multiple forms
+                extracted_content = extracted_content.replace('\\n', '\n')
+                extracted_content = extracted_content.replace('\\"', '"')
+                extracted_content = extracted_content.replace('\\\\', '\\')
+                extracted_content = extracted_content.replace('\\t', '\t')
+                # Fix tables
+                extracted_content = self._fix_table_formatting(extracted_content)
                 print(f"[AI] Extracted content from malformed JSON, length: {len(extracted_content)}")
                 return {"content": extracted_content}
             
+            # Try to extract lesson fields from malformed JSON
+            def extract_field(text, field_name):
+                import re
+                pattern = rf'"{field_name}"\s*:\s*"(.*?)(?:"\s*[,}}]|$)'
+                match = re.search(pattern, text, re.DOTALL)
+                if match:
+                    val = match.group(1).replace('\\n', '\n').replace('\\"', '"')
+                    return val
+                return ""
+            
+            def extract_array(text, field_name):
+                """Extract JSON array from malformed response."""
+                import re
+                import json
+                # Find the array pattern
+                pattern = rf'"{field_name}"\s*:\s*\[(.*?)\]'
+                match = re.search(pattern, text, re.DOTALL)
+                if match:
+                    try:
+                        array_str = '[' + match.group(1) + ']'
+                        # Try to parse it
+                        return json.loads(array_str)
+                    except:
+                        pass
+                return []
+            
+            title = extract_field(response_text, 'title') or "Generated Lesson"
+            summary = extract_field(response_text, 'summary') or "AI-generated content"
+            full_content = extract_field(response_text, 'full_content')
+            
+            # Try to extract arrays
+            exercises = extract_array(response_text, 'exercises')
+            quiz = extract_array(response_text, 'quiz')
+            conversational_practice = extract_array(response_text, 'conversational_practice')
+            
+            if full_content:
+                full_content = self._fix_table_formatting(full_content)
+                print(f"[AI] Extracted lesson fields from malformed JSON (exercises: {len(exercises)}, quiz: {len(quiz)})")
+                return {
+                    "title": title,
+                    "summary": summary,
+                    "full_content": full_content,
+                    "exercises": exercises,
+                    "quiz": quiz,
+                    "conversational_practice": conversational_practice
+                }
+            
             # Look for markdown content directly (fallback)
-            if "# " in response_text:
+            if "# " in response_text or "## " in response_text:
                 # Find start of markdown content
-                start_idx = response_text.find('# ')
+                start_idx = response_text.find('## ') if '## ' in response_text else response_text.find('# ')
                 extracted = response_text[start_idx:].strip()
                 # Remove trailing JSON artifacts
                 if extracted.endswith('"}') or extracted.endswith('"'):
                     extracted = extracted.rstrip('"}').strip()
+                extracted = self._fix_table_formatting(extracted)
                 print(f"[AI] Extracted markdown directly, length: {len(extracted)}")
-                return {"content": extracted}
+                return {
+                    "title": title or "Generated Lesson",
+                    "summary": summary or "AI-generated content",
+                    "full_content": extracted,
+                    "content": extracted,
+                    "exercises": [],
+                    "quiz": [],
+                    "conversational_practice": []
+                }
             
             return {
-                "title": "Error Parsing Response",
+                "title": title or "Error Parsing Response",
+                "summary": summary or f"JSON parse error: {str(je)}",
                 "description": f"JSON parse error: {str(je)}",
+                "full_content": response_text[:2000] if response_text else "",
                 "content": response_text[:1000] if response_text else "",
-                "chapters": []
+                "exercises": [],
+                "quiz": [],
+                "chapters": [],
+                "conversational_practice": []
             }
         except Exception as e:
             print(f"[AI] Error generating content: {e}")
@@ -189,16 +285,32 @@ class AICoach:
         """Generate a complete lesson. Uses quality model."""
         prompt = f"""
         Generate a complete English lesson for the topic '{topic}' at level '{level}'.
-        Return the response in JSON format with the following structure:
+        
+        IMPORTANT FORMATTING RULES for full_content:
+        1. Use ## for section headings
+        2. Use **bold** for important terms
+        3. FOR TABLES - Use EXACTLY this format with pipes on ALL rows:
+           
+           | Header 1 | Header 2 |
+           | --- | --- |
+           | Data 1 | Data 2 |
+           | Data 3 | Data 4 |
+           
+           Each row MUST start and end with | pipe character.
+           The separator row MUST have | --- | between headers and data.
+        4. Use > for notes and tips
+        5. Use - for bullet points
+        
+        Return the response in JSON format:
         {{
             "title": "Lesson Title",
-            "summary": "Short summary",
-            "full_content": "Markdown content of the lesson",
+            "summary": "Short summary (1-2 sentences)",
+            "full_content": "## Introduction\\n\\nYour markdown content with proper tables...",
             "exercises": [
-                {{"question": "...", "options": ["..."], "answer": "..."}}
+                {{"question": "...", "options": ["a", "b", "c", "d"], "answer": "a"}}
             ],
             "quiz": [
-                {{"question": "...", "options": ["..."], "answer": "..."}}
+                {{"question": "...", "options": ["a", "b", "c", "d"], "answer": "b"}}
             ],
             "conversational_practice": [
                 {{"speaker": "Person A", "text": "..."}},
@@ -236,27 +348,46 @@ class AICoach:
         """Generate chapter content. Uses quality model."""
         print(f"[AI] Generating content for chapter: {chapter_title}")
         prompt = f"""
-        Write educational content for this chapter in an English learning book.
+        Write educational content for an English learning book chapter.
         
         Book: {book_title}
         Chapter: {chapter_title}
         Level: {level}
         
-        Write detailed, educational content in Markdown format.
+        FORMATTING REQUIREMENTS - USE PROPER MARKDOWN:
         
-        Include:
-        - Introduction to the topic
-        - Key concepts with clear explanations
-        - At least 3-5 practical examples
-        - Common mistakes to avoid
-        - Practice tips
-        - Summary
+        IMPORTANT: Do NOT include the chapter title as a heading - it is already displayed separately.
+        Start directly with the Introduction section.
         
-        Return JSON:
+        1. Use ## for section headings (not # or ###)
+        2. Use **bold** for important terms
+        3. Use bullet points with - for lists
+        4. Use numbered lists with 1. 2. 3. for steps
+        
+        5. FOR TABLES - Use this exact format:
+           | Column 1 | Column 2 | Column 3 |
+           |----------|----------|----------|
+           | data 1   | data 2   | data 3   |
+        
+        6. Use > for important notes/tips
+        7. Use --- for section separators
+        
+        CONTENT STRUCTURE (start with Introduction, NOT the chapter title):
+        - ## Introduction (explain what this chapter covers)
+        - ## Key Concepts (main learning points with examples)
+        - ## Examples (at least 5 practical examples with explanations)
+        - ## Common Mistakes (what to avoid)
+        - ## Practice Tips (how to practice)
+        - ## Summary (key takeaways)
+        
+        Include at least ONE table comparing forms, examples, or concepts.
+        
+        Return JSON format:
         {{
-            "content": "# {chapter_title}\\n\\nYour markdown content here..."
+            "content": "## Introduction\\n\\nStart content here without chapter title..."
         }}
         """
         result = self.generate_content(prompt)
         print(f"[AI] Chapter content length: {len(result.get('content', ''))}")
         return result
+

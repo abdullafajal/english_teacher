@@ -216,8 +216,56 @@ def lesson_detail(request, lesson_id):
         progress.last_activity_date = today
         progress.save()
     
-    # Convert markdown content to HTML
-    lesson.content_html = markdown.markdown(lesson.content)
+    # Convert markdown content to HTML using MarkdownIt (with tables)
+    from markdown_it import MarkdownIt
+    from mdit_py_plugins.tasklists import tasklists_plugin
+    from mdit_py_plugins.container import container_plugin
+    import re
+    
+    md = (
+        MarkdownIt('commonmark', {'breaks': True, 'html': True})
+        .enable('table')
+        .enable('strikethrough')
+        .use(tasklists_plugin)
+        .use(container_plugin, name='warning')
+        .use(container_plugin, name='tip')
+    )
+    
+    # Fix table formatting
+    def fix_table_formatting(content):
+        content = re.sub(r'\|\s*\|\s*:?-', '|\n| -', content)
+        content = re.sub(r'\|\s*\|(:---)', r'|\n|\1', content)
+        content = re.sub(r'(-{3,}\s*\|)\s*\|\s*(?=[A-Za-z0-9])', r'\1\n| ', content)
+        content = re.sub(r'\|\s*\|\s*(?=[A-Za-z0-9])', '|\n| ', content)
+        content = re.sub(r'\n\|\s*\|', '\n|', content)
+        content = re.sub(r'([^\n])\n(\| [A-Za-z])', r'\1\n\n\2', content)
+        
+        # Fix tables without headers - add header row for orphan table rows
+        lines = content.split('\n')
+        fixed_lines = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            if line.strip().startswith('|') and '|' in line[1:]:
+                next_line = lines[i + 1].strip() if i + 1 < len(lines) else ''
+                if not (next_line.startswith('|') and '---' in next_line):
+                    prev_line = fixed_lines[-1].strip() if fixed_lines else ''
+                    if not (prev_line.startswith('|') and '---' in prev_line) and not prev_line.startswith('|'):
+                        cols = line.count('|') - 1
+                        if cols >= 2:
+                            headers = ['Column ' + str(j+1) for j in range(cols)]
+                            header_row = '| ' + ' | '.join(headers) + ' |'
+                            separator = '| ' + ' | '.join(['---'] * cols) + ' |'
+                            fixed_lines.append('')
+                            fixed_lines.append(header_row)
+                            fixed_lines.append(separator)
+            fixed_lines.append(line)
+            i += 1
+        return '\n'.join(fixed_lines)
+    
+    content = fix_table_formatting(lesson.content) if lesson.content else ''
+    lesson.content_html = md.render(content)
+    
     return render(request, 'lesson_detail.html', {'lesson': lesson})
 
 
@@ -351,25 +399,104 @@ def book_detail(request, book_id):
     chapters = []
     db_chapters = book.chapters.all().order_by('order')
     
+    def fix_table_formatting(content):
+        """Fix markdown tables that are on single lines."""
+        import re
+        
+        # Pattern: | Header | Header | | :--- | :--- | | data | data |
+        # Need to add newlines between: header row, separator row, data rows
+        
+        # Step 1: Add newline before separator row (| :--- or |:---)
+        content = re.sub(r'\|\s*\|\s*:?-', '|\n| -', content)
+        content = re.sub(r'\|\s*\|(:---)', r'|\n|\1', content)
+        
+        # Step 2: Add newline after separator row (---| |)
+        content = re.sub(r'(-{3,}\s*\|)\s*\|\s*(?=[A-Za-z0-9])', r'\1\n| ', content)
+        
+        # Step 3: Add newline between data rows (| data | | next |)
+        content = re.sub(r'\|\s*\|\s*(?=[A-Za-z0-9])', '|\n| ', content)
+        
+        # Step 4: Clean up any double pipes at start of lines
+        content = re.sub(r'\n\|\s*\|', '\n|', content)
+        
+        # Step 5: Ensure blank line before table (for markdown parsing)
+        content = re.sub(r'([^\n])\n(\| [A-Za-z])', r'\1\n\n\2', content)
+        
+        # Step 6: Fix tables without headers - add header row for orphan table rows
+        # Detect consecutive | rows without --- separator
+        lines = content.split('\n')
+        fixed_lines = []
+        i = 0
+        while i < len(lines):
+            line = lines[i]
+            # Check if this is a table row (starts with |)
+            if line.strip().startswith('|') and '|' in line[1:]:
+                # Check if next line is NOT a separator row
+                next_line = lines[i + 1].strip() if i + 1 < len(lines) else ''
+                if not (next_line.startswith('|') and '---' in next_line):
+                    # Check if previous line was NOT a separator or header
+                    prev_line = fixed_lines[-1].strip() if fixed_lines else ''
+                    if not (prev_line.startswith('|') and '---' in prev_line) and not prev_line.startswith('|'):
+                        # This is an orphan table row - count columns and add header
+                        cols = line.count('|') - 1
+                        if cols >= 2:
+                            # Create header based on column count
+                            headers = ['Column ' + str(j+1) for j in range(cols)]
+                            header_row = '| ' + ' | '.join(headers) + ' |'
+                            separator = '| ' + ' | '.join(['---'] * cols) + ' |'
+                            fixed_lines.append('')
+                            fixed_lines.append(header_row)
+                            fixed_lines.append(separator)
+            fixed_lines.append(line)
+            i += 1
+        content = '\n'.join(fixed_lines)
+        
+        return content
+    
+    def strip_title_from_content(content, title):
+        """Remove chapter title from beginning of content to avoid duplication."""
+        import re
+        # Remove title if it appears as first line (with or without # prefix)
+        lines = content.strip().split('\n')
+        if lines:
+            first_line = lines[0].strip()
+            # Check various formats: # Title, ## Title, Title
+            title_clean = title.replace('Chapter ', '').strip()
+            patterns = [
+                first_line.lstrip('#').strip() == title,
+                first_line.lstrip('#').strip() == title_clean,
+                title in first_line,
+                'Chapter' in first_line and ':' in first_line,
+            ]
+            if any(patterns):
+                # Skip the first line (title) and maybe blank line after
+                content = '\n'.join(lines[1:]).lstrip()
+        return content
+    
     if db_chapters.exists():
         # Use Chapter model
         for chapter in db_chapters:
+            content = strip_title_from_content(chapter.content, chapter.title) if chapter.content else ''
+            content = fix_table_formatting(content)
             chapters.append({
                 'id': chapter.id,
                 'title': chapter.title,
                 'summary': chapter.summary,
-                'content': chapter.content,
-                'content_html': md.render(chapter.content) if chapter.content else '',
+                'content': content,
+                'content_html': md.render(content) if content else '',
             })
     else:
         # Fallback to JSON content field
         json_chapters = book.content.get('chapters', []) if book.content else []
         for chapter in json_chapters:
+            title = chapter.get('title', '')
+            content = strip_title_from_content(chapter.get('content', ''), title)
+            content = fix_table_formatting(content)
             chapters.append({
-                'title': chapter.get('title', ''),
+                'title': title,
                 'summary': chapter.get('summary', ''),
-                'content': chapter.get('content', ''),
-                'content_html': md.render(chapter.get('content', '')) if chapter.get('content') else '',
+                'content': content,
+                'content_html': md.render(content) if content else '',
             })
     
     return render(request, 'book_detail.html', {'book': book, 'chapters': chapters})
