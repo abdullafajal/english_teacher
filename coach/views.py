@@ -5,7 +5,7 @@ from django.views.decorators.http import require_POST
 from django.utils import timezone
 from django.core.cache import cache
 from functools import wraps
-from .models import Topic, Lesson, Book, UserProgress, GenerationTask
+from .models import Topic, Lesson, Book, Chapter, UserProgress, GenerationTask
 from .services import AICoach
 from django.contrib.auth.decorators import login_required
 import markdown
@@ -38,11 +38,21 @@ def rate_limit(requests_per_minute=15):
             # Check if over limit
             if len(timestamps) >= requests_per_minute:
                 wait_time = int(60 - (now - timestamps[0]))
-                return JsonResponse({
-                    'error': f'Rate limit exceeded. Please wait {wait_time} seconds.',
-                    'rate_limited': True,
-                    'wait_seconds': wait_time
-                }, status=429)
+                
+                # Check if AJAX/API request
+                is_ajax = request.headers.get('Content-Type') == 'application/json' or request.headers.get('X-Requested-With') == 'XMLHttpRequest'
+                
+                if is_ajax:
+                    return JsonResponse({
+                        'error': f'Rate limit exceeded. Please wait {wait_time} seconds.',
+                        'rate_limited': True,
+                        'wait_seconds': wait_time
+                    }, status=429)
+                else:
+                    # For page requests, add message and redirect
+                    from django.contrib import messages
+                    messages.error(request, f'Rate limit exceeded. Please wait {wait_time} seconds before generating more content.')
+                    return redirect('home')
             
             # Add current timestamp and save
             timestamps.append(now)
@@ -337,9 +347,31 @@ def book_detail(request, book_id):
         .use(deflist_plugin)
     )
 
-    chapters = book.content.get('chapters', [])
-    for chapter in chapters:
-        chapter['content_html'] = md.render(chapter['content'])
+    # Use Chapter model if available, fallback to JSON content
+    chapters = []
+    db_chapters = book.chapters.all().order_by('order')
+    
+    if db_chapters.exists():
+        # Use Chapter model
+        for chapter in db_chapters:
+            chapters.append({
+                'id': chapter.id,
+                'title': chapter.title,
+                'summary': chapter.summary,
+                'content': chapter.content,
+                'content_html': md.render(chapter.content) if chapter.content else '',
+            })
+    else:
+        # Fallback to JSON content field
+        json_chapters = book.content.get('chapters', []) if book.content else []
+        for chapter in json_chapters:
+            chapters.append({
+                'title': chapter.get('title', ''),
+                'summary': chapter.get('summary', ''),
+                'content': chapter.get('content', ''),
+                'content_html': md.render(chapter.get('content', '')) if chapter.get('content') else '',
+            })
+    
     return render(request, 'book_detail.html', {'book': book, 'chapters': chapters})
 
 @login_required
@@ -388,13 +420,27 @@ def generate_book_outline_background(task_id, topic, level):
         coach = AICoach()
         book_data = coach.generate_book_outline(topic, level)
         
+        # Create book
         book = Book.objects.create(
             title=book_data.get('title', 'Untitled Book'),
             description=book_data.get('description', ''),
             level=level,
-            content=book_data,
+            content=book_data,  # Keep JSON for backward compatibility
             is_published=False
         )
+        
+        # Create Chapter objects from outline
+        chapters_data = book_data.get('chapters', [])
+        for i, chapter_data in enumerate(chapters_data):
+            Chapter.objects.create(
+                book=book,
+                title=chapter_data.get('title', f'Chapter {i+1}'),
+                summary=chapter_data.get('summary', ''),
+                content='',  # Content generated separately
+                order=i
+            )
+        
+        print(f"[Book Gen] Created book '{book.title}' with {len(chapters_data)} chapters")
         
         task.status = 'completed'
         task.result_id = book.id
@@ -402,6 +448,7 @@ def generate_book_outline_background(task_id, topic, level):
         task.save()
         
     except Exception as e:
+        print(f"[Book Gen] FAILED: {str(e)}")
         task = GenerationTask.objects.get(id=task_id)
         task.status = 'failed'
         task.error_message = str(e)
@@ -451,6 +498,7 @@ def admin_generate_book_content(request, book_id):
 def generate_book_content_background(task_id, book_id):
     """Background function to generate all chapter content."""
     import django
+    import traceback
     django.db.connection.close()
     
     try:
@@ -461,18 +509,24 @@ def generate_book_content_background(task_id, book_id):
         book = Book.objects.get(id=book_id)
         coach = AICoach()
         
-        book_content = book.content
-        chapters = book_content.get('chapters', [])
+        # Use Chapter model
+        db_chapters = book.chapters.all().order_by('order')
         
-        updated_chapters = []
-        for chapter in chapters:
-            content_data = coach.generate_chapter_content(chapter['title'], book.title, book.level)
-            chapter['content'] = content_data.get('content', '')
-            updated_chapters.append(chapter)
+        print(f"[Chapter Gen] Starting for book: {book.title}, {db_chapters.count()} chapters")
         
-        book_content['chapters'] = updated_chapters
-        book.content = book_content
-        book.save()
+        for i, chapter in enumerate(db_chapters):
+            print(f"[Chapter Gen] Generating chapter {i+1}/{db_chapters.count()}: {chapter.title}")
+            try:
+                content_data = coach.generate_chapter_content(chapter.title, book.title, book.level)
+                chapter.content = content_data.get('content', '')
+                chapter.save()
+                print(f"[Chapter Gen] Chapter {i+1} done, content length: {len(chapter.content)}")
+            except Exception as chapter_error:
+                print(f"[Chapter Gen] Error on chapter {i+1}: {str(chapter_error)}")
+                chapter.content = f"Error generating content: {str(chapter_error)}"
+                chapter.save()
+        
+        print(f"[Chapter Gen] All chapters complete for book: {book.title}")
         
         task.status = 'completed'
         task.result_id = book_id
@@ -480,6 +534,8 @@ def generate_book_content_background(task_id, book_id):
         task.save()
         
     except Exception as e:
+        print(f"[Chapter Gen] FAILED: {str(e)}")
+        print(traceback.format_exc())
         task = GenerationTask.objects.get(id=task_id)
         task.status = 'failed'
         task.error_message = str(e)

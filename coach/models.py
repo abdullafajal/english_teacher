@@ -56,12 +56,28 @@ class Book(models.Model):
     title = models.CharField(max_length=200)
     description = models.TextField()
     level = models.CharField(max_length=2, choices=Topic.LEVEL_CHOICES)
-    content = models.JSONField(help_text="List of chapters")
+    content = models.JSONField(help_text="List of chapters (legacy)", default=dict, blank=True)
     is_published = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
 
     def __str__(self):
         return self.title
+
+
+class Chapter(models.Model):
+    """Individual chapter belonging to a book."""
+    book = models.ForeignKey(Book, on_delete=models.CASCADE, related_name='chapters')
+    title = models.CharField(max_length=200)
+    summary = models.TextField(blank=True)
+    content = models.TextField(blank=True, help_text="Markdown content")
+    order = models.PositiveIntegerField(default=0)
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['order']
+    
+    def __str__(self):
+        return f"{self.book.title} - {self.title}"
 
 
 class GenerationTask(models.Model):
