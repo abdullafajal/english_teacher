@@ -13,4 +13,5 @@ dependencies = [
     "django-pwa>=2.0.1",
     "django-dynamic-preferences>=1.17.0",
     "markdown-it-py>=4.0.0",
+    "mdit-py-plugins>=0.5.0",
 ]
